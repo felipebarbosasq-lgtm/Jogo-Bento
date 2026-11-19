@@ -12,13 +12,13 @@ const BOSSES := {
 		"name": "General Raiga, a Lâmina do Trovão", "hp": 430.0, "walk": 2.2, "run": 5.2, "dmg": 15.0, "range": 2.6,
 		"cd": Vector2(0.9, 1.7), "block": 0.25, "view": 40.0, "fov": 360.0, "leash": 999.0,
 		"poise": 70.0, "windup": 0.55, "combo": 3, "ranged": false, "scale": 1.2,
-		"look": {"helmet": "kabuto", "mask": true, "weapon": "odachi", "armor": Color(0.1, 0.14, 0.3), "armor2": Color(0.2, 0.2, 0.25), "trim": Color(0.85, 0.65, 0.2), "cloth": Color(0.08, 0.08, 0.14), "hakama": Color(0.1, 0.1, 0.16), "crest": Color(0.95, 0.75, 0.25), "cape": true, "blade_color": Color(0.75, 0.85, 1.0), "blade_glow": 0.6},
+		"look": {"helmet": "hood", "hair_style": "none", "weapon": "scimitar", "dual": true, "eyes": Color(0.5, 0.8, 1.0), "armor": Color(0.32, 0.4, 0.5), "armor2": Color(0.18, 0.22, 0.28), "trim": Color(0.25, 0.17, 0.1), "cloth": Color(0.05, 0.05, 0.07), "hakama": Color(0.06, 0.06, 0.08), "crest": Color(0.6, 0.62, 0.66), "cape": true, "cape_color": Color(0.05, 0.05, 0.07), "straps": true, "mon": false, "blade_color": Color(0.62, 0.72, 0.82), "blade_glow": 0.15},
 	},
 	"akuma": {
 		"name": "Lorde Akuma, o Guerreiro da Lua Sangrenta", "hp": 820.0, "walk": 2.3, "run": 5.6, "dmg": 17.0, "range": 2.8,
 		"cd": Vector2(0.8, 1.5), "block": 0.3, "view": 50.0, "fov": 360.0, "leash": 999.0,
 		"poise": 95.0, "windup": 0.52, "combo": 4, "ranged": false, "scale": 1.3,
-		"look": {"helmet": "oni", "mask": true, "cape": true, "weapon": "odachi", "armor": Color(0.06, 0.04, 0.05), "armor2": Color(0.3, 0.03, 0.05), "trim": Color(0.75, 0.05, 0.08), "cloth": Color(0.05, 0.03, 0.04), "hakama": Color(0.08, 0.02, 0.03), "eyes": Color(1.0, 0.1, 0.05), "crest": Color(0.7, 0.05, 0.05), "blade_color": Color(0.95, 0.12, 0.1), "blade_glow": 2.0, "skin": Color(0.6, 0.48, 0.42), "hair_style": "none"},
+		"look": {"helmet": "oni_crown", "cape": true, "cape_color": Color(0.45, 0.04, 0.06), "weapon": "odachi", "armor": Color(0.2, 0.05, 0.06), "armor2": Color(0.08, 0.05, 0.05), "trim": Color(0.5, 0.05, 0.07), "cloth": Color(0.05, 0.03, 0.04), "hakama": Color(0.06, 0.03, 0.04), "eyes": Color(1.0, 0.12, 0.05), "crest": Color(0.6, 0.05, 0.05), "blade_color": Color(0.95, 0.12, 0.1), "blade_glow": 2.0, "skin": Color(0.62, 0.5, 0.44), "hair_style": "long_silver", "hair": Color(0.82, 0.82, 0.86), "straps": true, "mon": false},
 	},
 }
 

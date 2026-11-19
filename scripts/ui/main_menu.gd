@@ -13,45 +13,59 @@ var _model: CharacterModel
 var _t := 0.0
 
 
+var _bg: TextureRect
+
+
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var bg := TextureRect.new()
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var grad := Gradient.new()
-	grad.set_color(0, Color(0.16, 0.03, 0.05))
-	grad.set_color(1, Color(0.02, 0.01, 0.02))
-	var gt := GradientTexture2D.new()
-	gt.gradient = grad
-	gt.fill = GradientTexture2D.FILL_RADIAL
-	gt.fill_from = Vector2(0.7, 0.35)
-	gt.fill_to = Vector2(0.0, 1.1)
-	bg.texture = gt
-	bg.stretch_mode = TextureRect.STRETCH_SCALE
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	add_child(bg)
-
-	var moon := MoonDraw.new()
-	moon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	moon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(moon)
-
+	var black := ColorRect.new()
+	black.color = Color(0.02, 0.015, 0.02)
+	black.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(black)
+	# arte cinematográfica de fundo (movimento lento de câmera)
+	_bg = TextureRect.new()
+	_bg.texture = LoadingScreen.tex("res://assets/art/menu_viajante.jpg")
+	_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	add_child(_bg)
+	add_child(UIStyle.gradient_shade(true, 0.95))
+	var bottom := UIStyle.gradient_shade(false, 0.7)
+	add_child(bottom)
 	_add_petals()
-	_add_hero_view()
 
 	var left := VBoxContainer.new()
 	left.anchor_top = 0.0
 	left.anchor_bottom = 1.0
-	left.offset_left = 70
-	left.offset_top = 60
-	left.offset_right = 640
-	left.add_theme_constant_override("separation", 14)
+	left.offset_left = 80
+	left.offset_top = 70
+	left.offset_right = 700
+	left.add_theme_constant_override("separation", 12)
 	add_child(left)
-	var title := UIStyle.label("SHIN", 120, Color(0.96, 0.94, 0.9))
-	title.add_theme_constant_override("outline_size", 12)
-	left.add_child(title)
-	left.add_child(UIStyle.label("A LENDA DO SAMURAI DAS SOMBRAS", 26, Color(0.9, 0.2, 0.2)))
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 22)
+	left.add_child(title_row)
+	var title := UIStyle.title("SHIN", 136)
+	title_row.add_child(title)
+	var seal := PanelContainer.new()
+	var ssb := StyleBoxFlat.new()
+	ssb.bg_color = Color(0.7, 0.07, 0.08, 0.92)
+	ssb.set_corner_radius_all(6)
+	ssb.content_margin_left = 10
+	ssb.content_margin_right = 10
+	seal.add_theme_stylebox_override("panel", ssb)
+	seal.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var kanji := UIStyle.title("侍", 58, Color(0.98, 0.93, 0.86))
+	seal.add_child(kanji)
+	title_row.add_child(seal)
+	left.add_child(UIStyle.title("A LENDA DO SAMURAI DAS SOMBRAS", 30, Color(0.92, 0.3, 0.26)))
+	var line := ColorRect.new()
+	line.color = Color(0.78, 0.62, 0.36, 0.85)
+	line.custom_minimum_size = Vector2(420, 2)
+	line.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	left.add_child(line)
 	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 40)
+	spacer.custom_minimum_size = Vector2(0, 36)
 	left.add_child(spacer)
 	var b_play := UIStyle.button("Jogar")
 	b_play.pressed.connect(func(): play_pressed.emit())
@@ -64,14 +78,15 @@ func _ready() -> void:
 	left.add_child(b_set)
 	var b_quit := UIStyle.button("Sair")
 	b_quit.pressed.connect(func(): quit_pressed.emit())
-	left.add_child(b_quit)
+	if not OS.has_feature("web"):
+		left.add_child(b_quit)
 	b_play.grab_focus.call_deferred()
 
-	var foot := UIStyle.label("v1.0 • Godot 4 • Arte, modelos e música procedurais originais", 14, Color(0.6, 0.55, 0.55))
+	var foot := UIStyle.label("v2.0  •  Godot 4  •  Edição Cinematográfica", 15, Color(0.75, 0.68, 0.6))
 	foot.anchor_top = 1.0
 	foot.anchor_bottom = 1.0
-	foot.offset_left = 24
-	foot.offset_top = -36
+	foot.offset_left = 80
+	foot.offset_top = -46
 	add_child(foot)
 	refresh()
 
@@ -149,8 +164,11 @@ func _add_hero_view() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
-	if _model:
-		_model.rotation.y = PI + 0.45 + sin(_t * 0.4) * 0.25
+	if _bg:
+		var k := 1.06 + sin(_t * 0.05) * 0.04
+		_bg.pivot_offset = _bg.size * Vector2(0.5, 0.45)
+		_bg.scale = Vector2(k, k)
+		_bg.position.x = sin(_t * 0.07) * 18.0
 
 
 class MoonDraw:

@@ -10,16 +10,17 @@ const INK := Color(0.04, 0.03, 0.04)
 static func button(text: String, min_w := 320.0) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(min_w, 54)
-	b.add_theme_font_size_override("font_size", 24)
+	b.custom_minimum_size = Vector2(min_w, 56)
+	b.add_theme_font_size_override("font_size", 25)
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.add_theme_color_override("font_color", Color(0.92, 0.9, 0.86))
 	b.add_theme_color_override("font_hover_color", Color(1, 1, 1))
 	b.add_theme_color_override("font_disabled_color", Color(0.45, 0.42, 0.4))
 	b.add_theme_color_override("font_focus_color", Color(1, 1, 1))
-	b.add_theme_stylebox_override("normal", _sb(Color(0.06, 0.04, 0.05, 0.75), Color(0.4, 0.08, 0.1)))
-	b.add_theme_stylebox_override("hover", _sb(Color(0.4, 0.05, 0.07, 0.9), Color(0.95, 0.3, 0.25)))
-	b.add_theme_stylebox_override("pressed", _sb(Color(0.6, 0.08, 0.1, 0.95), Color(1, 0.6, 0.4)))
-	b.add_theme_stylebox_override("focus", _sb(Color(0.3, 0.04, 0.06, 0.85), GOLD))
+	b.add_theme_stylebox_override("normal", _sb(Color(0.03, 0.02, 0.03, 0.55), Color(0.55, 0.42, 0.25, 0.6)))
+	b.add_theme_stylebox_override("hover", _sb(Color(0.45, 0.05, 0.07, 0.85), Color(0.95, 0.75, 0.45)))
+	b.add_theme_stylebox_override("pressed", _sb(Color(0.6, 0.08, 0.1, 0.95), Color(1, 0.85, 0.5)))
+	b.add_theme_stylebox_override("focus", _sb(Color(0.35, 0.04, 0.06, 0.8), GOLD))
 	b.add_theme_stylebox_override("disabled", _sb(Color(0.05, 0.05, 0.05, 0.5), Color(0.2, 0.2, 0.2)))
 	b.mouse_entered.connect(func():
 		if not b.disabled:
@@ -80,3 +81,56 @@ static func centered(node: Control) -> CenterContainer:
 	c.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	c.add_child(node)
 	return c
+
+
+static var _title_font: Font
+static var _text_font: Font
+
+
+static func title_font() -> Font:
+	if _title_font == null and ResourceLoader.exists("res://assets/fonts/Shippori-Title.ttf"):
+		_title_font = load("res://assets/fonts/Shippori-Title.ttf")
+	return _title_font
+
+
+static func text_font() -> Font:
+	if _text_font == null and ResourceLoader.exists("res://assets/fonts/Shippori-Text.ttf"):
+		_text_font = load("res://assets/fonts/Shippori-Text.ttf")
+	return _text_font
+
+
+static func title(text: String, size := 64, col := Color(0.97, 0.94, 0.88)) -> Label:
+	var l := label(text, size, col)
+	if title_font():
+		l.add_theme_font_override("font", title_font())
+	l.add_theme_constant_override("outline_size", 10)
+	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	l.add_theme_constant_override("shadow_offset_y", 4)
+	return l
+
+
+static func gradient_shade(left := true, strength := 0.92) -> TextureRect:
+	## Sombreado em degradê para dar legibilidade ao texto sobre a arte.
+	var g := Gradient.new()
+	g.set_color(0, Color(0.02, 0.01, 0.02, strength))
+	g.set_color(1, Color(0.02, 0.01, 0.02, 0.0))
+	g.add_point(0.5, Color(0.02, 0.01, 0.02, strength * 0.7))
+	var gt := GradientTexture2D.new()
+	gt.gradient = g
+	gt.fill_from = Vector2(0, 0) if left else Vector2(0, 1)
+	gt.fill_to = Vector2(1, 0) if left else Vector2(0, 0)
+	var r := TextureRect.new()
+	r.texture = gt
+	r.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	r.stretch_mode = TextureRect.STRETCH_SCALE
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return r
+
+
+static func make_theme() -> Theme:
+	var t := Theme.new()
+	if text_font():
+		t.default_font = text_font()
+	t.default_font_size = 18
+	return t

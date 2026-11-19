@@ -20,13 +20,35 @@ func _init() -> void:
 
 func _build_world() -> void:
 	Props.environment(self, {
-		"sky_top": Color(0.18, 0.12, 0.22), "sky_horizon": Color(0.85, 0.42, 0.22), "sky_bottom": Color(0.2, 0.1, 0.08),
-		"moon_dir": Vector3(0.6, 0.12, -1.0), "moon_color": Color(1.0, 0.55, 0.3), "moon_size": 0.06, "moon_glow": 0.9,
-		"fog_color": Color(0.45, 0.28, 0.22), "fog_density": 0.022, "fog_sky": 0.3,
-		"ambient": Color(0.55, 0.4, 0.38), "ambient_energy": 0.55, "sun_color": Color(1.0, 0.6, 0.35), "sun_energy": 1.0,
-		"sun_rot": Vector3(-18, -125, 0), "clouds": 0.5, "exposure": 0.95,
+		"sky_top": Color(0.2, 0.36, 0.62), "sky_horizon": Color(1.0, 0.72, 0.48), "sky_bottom": Color(0.2, 0.16, 0.12),
+		"moon_dir": Vector3(0.62, 0.14, -1.0), "moon_color": Color(1.0, 0.72, 0.42), "moon_size": 0.035, "moon_glow": 1.3,
+		"fog_color": Color(0.62, 0.55, 0.5), "fog_density": 0.009, "fog_sky": 0.25, "clouds": 0.6,
+		"cloud_light": Color(1.0, 0.86, 0.7), "cloud_shadow": Color(0.5, 0.48, 0.6),
+		"ambient": Color(0.5, 0.48, 0.55), "ambient_energy": 0.6, "sun_color": Color(1.0, 0.75, 0.5), "sun_energy": 1.15,
+		"sun_rot": Vector3(-22, -125, 0), "exposure": 0.95,
+		"grade": {"lift": Vector3(0.02, 0.01, 0.03), "gain": Vector3(1.06, 1.0, 0.92), "saturation": 1.08, "contrast": 1.1, "bloom": 0.3, "threshold": 0.68},
 	})
-	ground_plane(Vector2(130, 150), Vector3(0, 0, -5), Color(0.24, 0.2, 0.15))
+	var t := make_terrain(Vector2(220, 240), Vector3(0, 0, -5), {"grass_a": Color(0.14, 0.28, 0.09), "grass_b": Color(0.36, 0.5, 0.15), "dirt": Color(0.36, 0.27, 0.18)})
+	t.rects.append([Vector2(-48, -66), Vector2(48, 52)])
+	t.paths.append([Vector3(0, 0, 50), Vector3(0, 0, -60), 3.0])
+	t.paths.append([Vector3(-40, 0, 0), Vector3(40, 0, 0), 2.5])
+	t.paths.append([Vector3(0, 0, -20), Vector3(-24, 0, -32), 2.0])
+	t.rise = 10.0
+	t.hill = 22.0
+	t.ramp = 22.0
+	t.rivers.append([Vector3(62, 0, 110), Vector3(66, 0, -120), 3.0])
+	t.build(self)
+	t.build_rivers(self)
+	t.scatter_grass(self, 16000, Color(0.08, 0.18, 0.05), Color(0.42, 0.55, 0.18), [Color(1, 0.95, 0.9), Color(0.95, 0.6, 0.2), Color(0.75, 0.5, 0.9), Color(0.95, 0.3, 0.3)], 0.14, 45.0, -0.5)
+	Nature.mountain_range(self, Vector3(0, 0, -5), 210.0, 360.0, 175.0, [Color(0.14, 0.32, 0.16), Color(0.45, 0.45, 0.5), Color(0.98, 0.98, 1.0)], 11)
+	for i in 70:
+		var a := rnd.randf() * TAU
+		var r := rnd.randf_range(58, 105)
+		var tp := Vector3(cos(a) * r, 0, -5 + sin(a) * r * 1.1)
+		if rnd.randf() < 0.55:
+			Nature.big_tree(self, tp, rnd, rnd.randf_range(1.0, 1.6), "green", false)
+		else:
+			Nature.pine(self, tp, rnd, rnd.randf_range(1.0, 1.5), "deep", false)
 	bounds(Vector2(-48, -66), Vector2(48, 52))
 	# ruas de terra
 	path_strip([Vector3(0, 0, 50), Vector3(0, 0, 10), Vector3(0, 0, -10), Vector3(0, 0, -60)], 6.0, Color(0.34, 0.27, 0.2))
@@ -65,8 +87,6 @@ func _build_world() -> void:
 		Props.pine_tree(self, Vector3(rnd.randf_range(-46, 46), 0, -62 + rnd.randf_range(-2, 2)), rnd, 1.0, Color(0.15, 0.2, 0.15))
 		Props.pine_tree(self, Vector3(-46 + rnd.randf_range(-2, 2), 0, rnd.randf_range(-60, 48)), rnd)
 		Props.pine_tree(self, Vector3(46 + rnd.randf_range(-2, 2), 0, rnd.randf_range(-60, 48)), rnd)
-	for i in 6:
-		Props.mountain(self, Vector3(rnd.randf_range(-160, 160), 0, -150 - rnd.randf_range(0, 60)), rnd.randf_range(40, 70), rnd.randf_range(40, 70), Color(0.18, 0.12, 0.12))
 	# entrada da aldeia
 	Props.torii(self, Vector3(0, 0, 40), 0.0, 1.1, Color(0.35, 0.1, 0.08))
 	Props.banner(self, Vector3(-4.5, 0, 36), Color(0.15, 0.1, 0.1))

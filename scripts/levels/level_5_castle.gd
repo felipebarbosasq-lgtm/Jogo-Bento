@@ -23,15 +23,32 @@ func _build_world() -> void:
 		"sky_top": Color(0.08, 0.01, 0.03), "sky_horizon": Color(0.45, 0.06, 0.08), "sky_bottom": Color(0.1, 0.02, 0.03),
 		"moon_dir": Vector3(0.0, 0.42, -1.0), "moon_color": Color(1.0, 0.12, 0.08), "moon_size": 0.16, "moon_glow": 1.6,
 		"stars": 0.3, "clouds": 0.45,
-		"fog_color": Color(0.2, 0.06, 0.08), "fog_density": 0.012, "fog_sky": 0.15,
-		"ambient": Color(0.42, 0.36, 0.48), "ambient_energy": 0.6, "sun_color": Color(0.95, 0.55, 0.5), "sun_energy": 0.85, "saturation": 0.95,
-		"sun_rot": Vector3(-30, 180, 0), "exposure": 1.05,
+		"fog_color": Color(0.25, 0.12, 0.15), "fog_density": 0.01, "fog_sky": 0.15,
+		"ambient": Color(0.48, 0.44, 0.58), "ambient_energy": 0.85, "sun_color": Color(0.95, 0.65, 0.6), "sun_energy": 1.1,
+		"sun_rot": Vector3(-30, 180, 0), "exposure": 1.25, "cloud_light": Color(0.85, 0.35, 0.3), "cloud_shadow": Color(0.15, 0.04, 0.06),
+		"grade": {"lift": Vector3(0.02, 0.01, 0.03), "gain": Vector3(1.05, 0.98, 1.0), "saturation": 0.92, "contrast": 1.14, "bloom": 0.45, "threshold": 0.6},
 	})
 	for c in get_children():
 		if c is WorldEnvironment:
 			env = (c as WorldEnvironment).environment
 			sky_mat = env.sky.sky_material as ShaderMaterial
-	ground_plane(Vector2(120, 260), Vector3(0, 0, -70), Color(0.2, 0.18, 0.18))
+	var t := make_terrain(Vector2(220, 330), Vector3(0, 0, -70), {"grass_a": Color(0.07, 0.12, 0.06), "grass_b": Color(0.16, 0.22, 0.1), "dirt": Color(0.3, 0.26, 0.24), "rock": Color(0.32, 0.3, 0.32)})
+	t.rects.append([Vector2(-62, -162), Vector2(62, 56)])
+	t.paths.append([Vector3(0, 0, 48), Vector3(0, 0, -108), 3.0])
+	t.rise = 14.0
+	t.hill = 30.0
+	t.ramp = 20.0
+	t.build(self)
+	t.scatter_grass(self, 9000, Color(0.05, 0.08, 0.04), Color(0.22, 0.28, 0.12), [Color(0.9, 0.1, 0.08), Color(0.6, 0.05, 0.06)], 0.25, 40.0, -0.5)
+	Nature.mountain_range(self, Vector3(0, 0, -70), 240.0, 400.0, 190.0, [Color(0.1, 0.1, 0.1), Color(0.3, 0.22, 0.24), Color(0.85, 0.75, 0.78)], 31)
+	for i in 60:
+		var a := rnd.randf() * TAU
+		var r := rnd.randf_range(72, 115)
+		var tp := Vector3(cos(a) * r, 0, -70 + sin(a) * r * 1.3)
+		if rnd.randf() < 0.5:
+			Nature.big_tree(self, tp, rnd, rnd.randf_range(1.1, 1.6), "maple", false)
+		else:
+			Nature.pine(self, tp, rnd, rnd.randf_range(1.0, 1.5), "night", false)
 	var stone_c := Color(0.36, 0.34, 0.33)
 	# muralhas externas e do pátio
 	Props.stone_wall(self, Vector3(-26, 0, 30), Vector3(-4, 0, 30), 5.0, 2.0, stone_c)
@@ -102,9 +119,6 @@ func _build_world() -> void:
 	# castelo
 	Props.castle_keep(self, Vector3(0, 0, -178), 0.0, 1.3)
 	Props.stone_wall(self, Vector3(-60, 0, -150), Vector3(60, 0, -150), 7.0, 3.0, stone_c)
-	for i in 10:
-		var a := rnd.randf_range(-PI, 0)
-		Props.mountain(self, Vector3(cos(a) * rnd.randf_range(150, 220), 0, -100 + sin(a) * rnd.randf_range(170, 240)), rnd.randf_range(50, 80), rnd.randf_range(60, 110), Color(0.16, 0.06, 0.08))
 	for i in 20:
 		Props.pine_tree(self, Vector3((-1 if i % 2 == 0 else 1) * rnd.randf_range(30, 55), 0, rnd.randf_range(-140, 40)), rnd, 1.2, Color(0.1, 0.08, 0.08))
 	shrine(Vector3(5, 0, -48), 2)

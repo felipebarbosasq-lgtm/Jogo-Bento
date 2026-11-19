@@ -26,14 +26,45 @@ func px(z: float) -> float:
 
 func _build_world() -> void:
 	Props.environment(self, {
-		"sky_top": Color(0.14, 0.05, 0.12), "sky_horizon": Color(0.75, 0.3, 0.32), "sky_bottom": Color(0.2, 0.08, 0.1),
-		"moon_dir": Vector3(0.2, 0.32, -1.0), "moon_color": Color(1.0, 0.25, 0.2), "moon_size": 0.11, "moon_glow": 1.2,
-		"stars": 0.4, "clouds": 0.35,
-		"fog_color": Color(0.5, 0.25, 0.3), "fog_density": 0.016, "fog_sky": 0.25,
-		"ambient": Color(0.6, 0.45, 0.5), "ambient_energy": 0.6, "sun_color": Color(1.0, 0.55, 0.5), "sun_energy": 0.9,
-		"sun_rot": Vector3(-25, 175, 0), "exposure": 1.0, "saturation": 1.1,
+		"sky_top": Color(0.16, 0.22, 0.48), "sky_horizon": Color(1.0, 0.55, 0.42), "sky_bottom": Color(0.2, 0.1, 0.1),
+		"moon_dir": Vector3(0.2, 0.3, -1.0), "moon_color": Color(1.0, 0.3, 0.22), "moon_size": 0.1, "moon_glow": 1.4,
+		"stars": 0.3, "clouds": 0.6, "cloud_light": Color(1.0, 0.72, 0.62), "cloud_shadow": Color(0.42, 0.3, 0.45),
+		"fog_color": Color(0.6, 0.5, 0.55), "fog_density": 0.006, "fog_sky": 0.2,
+		"ambient": Color(0.5, 0.5, 0.6), "ambient_energy": 0.6, "sun_color": Color(1.0, 0.75, 0.6), "sun_energy": 1.05,
+		"sun_rot": Vector3(-24, 175, 0), "exposure": 0.95,
+		"grade": {"lift": Vector3(0.0, 0.0, 0.02), "gain": Vector3(1.02, 1.0, 0.98), "saturation": 1.05, "contrast": 1.1, "bloom": 0.32, "threshold": 0.66},
 	})
-	ground_plane(Vector2(140, 300), Vector3(0, 0, -110), Color(0.26, 0.2, 0.18))
+	var t := make_terrain(Vector2(200, 330), Vector3(0, 0, -115), {"grass_a": Color(0.12, 0.24, 0.08), "grass_b": Color(0.34, 0.46, 0.14), "dirt": Color(0.38, 0.28, 0.2)})
+	var tz := 14.0
+	while tz > -96.0:
+		t.segs.append([Vector3(px(tz), 0, tz), Vector3(px(tz - 6.0), 0, tz - 6.0), 10.5])
+		t.paths.append([Vector3(px(tz), 0, tz), Vector3(px(tz - 6.0), 0, tz - 6.0), 2.0])
+		tz -= 6.0
+	t.circles.append([ARENA, 20.0])
+	t.circles.append([BOSS_ARENA, 19.0])
+	t.segs.append([Vector3(0, 0, -100), Vector3(0, 0, -190), 7.5])
+	t.segs.append([Vector3(0, 0, -215), Vector3(0, 0, -256), 7.0])
+	t.paths.append([Vector3(0, 0, -138), Vector3(0, 0, -188), 2.0])
+	t.paths.append([Vector3(0, 0, -222), Vector3(0, 0, -255), 2.0])
+	t.rise = 12.0
+	t.hill = 26.0
+	t.ramp = 16.0
+	t.rivers.append([Vector3(-70, 0, 30), Vector3(-40, 0, -280), 2.6])
+	t.build(self)
+	t.build_rivers(self)
+	t.scatter_grass(self, 18000, Color(0.08, 0.16, 0.05), Color(0.4, 0.52, 0.16), [Color(0.95, 0.12, 0.08), Color(1.0, 0.45, 0.15), Color(0.95, 0.75, 0.85), Color(1, 1, 0.95)], 0.28, 35.0)
+	Nature.mountain_range(self, Vector3(0, 0, -115), 230.0, 400.0, 210.0, [Color(0.16, 0.3, 0.16), Color(0.5, 0.48, 0.5), Color(1.0, 0.96, 0.96)], 23)
+	for i in 80:
+		var cz := rnd.randf_range(-260, 20)
+		var side := -1.0 if rnd.randf() < 0.5 else 1.0
+		var cx := px(cz) + side * rnd.randf_range(22.0, 70.0)
+		var kind := rnd.randf()
+		if kind < 0.35:
+			Nature.big_tree(self, Vector3(cx, 0, cz), rnd, rnd.randf_range(1.0, 1.5), "maple", false)
+		elif kind < 0.6:
+			Nature.big_tree(self, Vector3(cx, 0, cz), rnd, rnd.randf_range(1.0, 1.5), "cherry", false)
+		else:
+			Nature.pine(self, Vector3(cx, 0, cz), rnd, rnd.randf_range(1.0, 1.5), "deep", false)
 	# trilha
 	var pts := []
 	var z := 8.0
@@ -93,9 +124,6 @@ func _build_world() -> void:
 	Props.wall(self, Vector3(1, 10, 34), Vector3(6.0, 5, -238))
 	Props.wall(self, Vector3(14, 10, 1), Vector3(0, 5, -255))
 	# montanhas e castelo ao longe
-	for i in 14:
-		var a := rnd.randf_range(-PI, 0)
-		Props.mountain(self, Vector3(cos(a) * rnd.randf_range(130, 200), 0, -110 + sin(a) * rnd.randf_range(150, 230)), rnd.randf_range(40, 80), rnd.randf_range(50, 110), Color(0.22, 0.12, 0.16), rnd.randf() < 0.5)
 	Props.castle_keep(self, Vector3(25, 0, -420), 0.3, 1.4)
 	shrine(Vector3(px(-98) + 4, 0, -98), 2)
 	shrine(Vector3(4, 0, -148), 6)

@@ -38,8 +38,14 @@ func setup(idx: int, from_stage: int, hud_ref: Node) -> void:
 	hud = hud_ref
 
 
+func _exit_tree() -> void:
+	if Terrain.active and is_instance_valid(self):
+		Terrain.active = null
+
+
 func _ready() -> void:
 	Game.level = self
+	Terrain.active = null
 	rnd.seed = 1000 + level_index
 	_build_world()
 	Props.batch_flush(self)
@@ -305,6 +311,16 @@ func bounds(min_c: Vector2, max_c: Vector2, h := 12.0) -> void:
 	Props.wall(self, Vector3(w + 2, h, 1), Vector3(cx, h / 2, max_c.y))
 	Props.wall(self, Vector3(1, h, d + 2), Vector3(min_c.x, h / 2, cz))
 	Props.wall(self, Vector3(1, h, d + 2), Vector3(max_c.x, h / 2, cz))
+
+
+func make_terrain(size: Vector2, center: Vector3, colors: Dictionary = {}, cell := 1.5) -> Terrain:
+	## Cria o terreno com relevo; registre as zonas planas antes de chamar build().
+	var t := Terrain.new()
+	t.size = size
+	t.center = center
+	t.cell = cell if Game.quality_level() > 0 else cell * 1.4
+	Terrain.active = t
+	return t
 
 
 func seg_wall(a: Vector3, b: Vector3, h := 10.0) -> void:

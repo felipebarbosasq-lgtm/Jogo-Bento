@@ -52,6 +52,7 @@ var cutscene := false          # true durante diálogos/cinemáticas (IA e jogad
 var player: Node = null        # referência ao jogador ativo
 var level: Node = null         # referência à fase ativa
 var in_game := false
+var post_mat: ShaderMaterial = null   # pós-processamento cinematográfico (definido pelo main)
 
 # Entrada virtual (touchscreen)
 var touch_move := Vector2.ZERO
@@ -64,6 +65,7 @@ func _ready() -> void:
 	_setup_audio_buses()
 	load_settings()
 	apply_settings()
+	get_tree().root.theme = UIStyle.make_theme()
 
 
 func _process(delta: float) -> void:
@@ -135,6 +137,8 @@ func _vol(bus_name: String, v: float) -> void:
 
 # --------------------------------------------------------------- configurações
 func load_settings() -> void:
+	if OS.has_feature("web") or is_mobile():
+		settings.quality = "medium"
 	if not FileAccess.file_exists(SETTINGS_PATH):
 		return
 	var f := FileAccess.open(SETTINGS_PATH, FileAccess.READ)
@@ -174,7 +178,7 @@ func apply_settings() -> void:
 				vp.msaa_3d = Viewport.MSAA_DISABLED
 			_:
 				vp.scaling_3d_scale = 1.0
-				vp.msaa_3d = Viewport.MSAA_2X
+				vp.msaa_3d = Viewport.MSAA_4X if not is_mobile() else Viewport.MSAA_2X
 	settings_changed.emit()
 
 

@@ -151,7 +151,9 @@ func _ready() -> void:
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	root.add_child(toast_label)
 
-	title_label = _label("", 46, Color(0.97, 0.94, 0.88))
+	title_label = _label("", 64, Color(0.97, 0.94, 0.88))
+	if UIStyle.title_font():
+		title_label.add_theme_font_override("font", UIStyle.title_font())
 	title_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	title_label.offset_left = -600
 	title_label.offset_right = 600
@@ -346,7 +348,7 @@ func hint(text: String, time := 6.0) -> void:
 
 
 func toast(text: String) -> void:
-	toast_label.text = "✦ " + text
+	toast_label.text = "◆ " + text
 	_toast_t = 2.5
 
 
@@ -392,7 +394,7 @@ func _show_line() -> void:
 	dialog_text.text = str(l[1])
 	_typing = 0.0
 	dialog_text.visible_ratio = 0.0
-	dialog_more.text = ("Toque para continuar  ▶" if Game.is_touch() else "Clique / Enter para continuar  ▶")
+	dialog_more.text = ("Toque para continuar  »" if Game.is_touch() else "Clique / Enter para continuar  »")
 	Sfx.play("ui_click", -10.0)
 
 

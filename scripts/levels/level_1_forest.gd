@@ -30,22 +30,47 @@ func half_width(z: float) -> float:
 
 func _build_world() -> void:
 	Props.environment(self, {
-		"sky_top": Color(0.42, 0.55, 0.62), "sky_horizon": Color(0.78, 0.84, 0.76), "sky_bottom": Color(0.3, 0.36, 0.28),
-		"moon_dir": Vector3(-0.4, 0.5, -1.0), "moon_color": Color(1.0, 0.95, 0.8), "moon_size": 0.03, "moon_glow": 0.8,
-		"fog_color": Color(0.55, 0.66, 0.56), "fog_density": 0.02, "fog_sky": 0.5,
-		"ambient": Color(0.5, 0.6, 0.52), "ambient_energy": 0.6, "sun_color": Color(1.0, 0.9, 0.72), "sun_energy": 1.05, "exposure": 0.92,
-		"sun_rot": Vector3(-38, 160, 0), "clouds": 0.25,
+		"sky_top": Color(0.2, 0.48, 0.72), "sky_horizon": Color(0.72, 0.86, 0.86), "sky_bottom": Color(0.2, 0.3, 0.2),
+		"moon_dir": Vector3(-0.35, 0.55, -1.0), "moon_color": Color(1.0, 0.95, 0.8), "moon_size": 0.025, "moon_glow": 1.0,
+		"fog_color": Color(0.42, 0.58, 0.62), "fog_density": 0.012, "fog_sky": 0.35, "clouds": 0.55,
+		"ambient": Color(0.38, 0.5, 0.58), "ambient_energy": 0.55, "sun_color": Color(1.0, 0.9, 0.7), "sun_energy": 1.05, "exposure": 0.9,
+		"sun_rot": Vector3(-42, 160, 0),
+		"grade": {"lift": Vector3(0.0, 0.015, 0.035), "gain": Vector3(1.02, 1.0, 0.95), "saturation": 0.98, "contrast": 1.12, "bloom": 0.22, "threshold": 0.72},
 	})
-	ground_plane(Vector2(120, 260), Vector3(0, 0, -105), Color(0.2, 0.26, 0.13))
-	# trilha de pedras
-	var stone := Props.mat(Color(0.4, 0.39, 0.35), 1.0)
+	# terreno: a trilha é plana; fora dela o chão sobe em encostas cobertas de mata
+	var t := make_terrain(Vector2(150, 280), Vector3(0, 0, -110), {"grass_a": Color(0.1, 0.22, 0.08), "grass_b": Color(0.24, 0.38, 0.11), "dirt": Color(0.3, 0.24, 0.16), "grass_dry": Color(0.4, 0.4, 0.2)})
+	t.rise = 7.0
+	t.hill = 14.0
+	t.ramp = 12.0
+	var tz := 14.0
+	while tz > END_Z - 14:
+		var tz2 := tz - 6.0
+		t.segs.append([Vector3(px(tz), 0, tz), Vector3(px(tz2), 0, tz2), minf(half_width(tz), half_width(tz2)) + 1.5])
+		t.paths.append([Vector3(px(tz), 0, tz), Vector3(px(tz2), 0, tz2), 1.6])
+		tz = tz2
+	t.rivers.append([Vector3(-60, 0, -118), Vector3(60, 0, -126), 2.2])
+	t.build(self)
+	t.build_rivers(self)
+	t.scatter_grass(self, 20000, Color(0.06, 0.16, 0.05), Color(0.3, 0.46, 0.14), [Color(1, 1, 0.95), Color(1.0, 0.85, 0.3), Color(0.95, 0.55, 0.75)], 0.1, 24.0)
+	Nature.mountain_range(self, Vector3(0, 0, -110), 230.0, 380.0, 170.0, [Color(0.12, 0.3, 0.2), Color(0.4, 0.45, 0.5), Color(0.95, 0.97, 1.0)], 3)
+	Nature.light_shafts(self, Vector3(0, 0, -100), Vector2(10, 110), 26, Vector3(-42, 160, 0), Color(1.0, 0.95, 0.7), 0.16)
+	# trilha de pedras musgosas
+	var stone := Props.mat(Color(0.4, 0.4, 0.36), 1.0)
 	var z := 4.0
 	while z > END_Z - 4:
 		var x := px(z) + rnd.randf_range(-0.4, 0.4)
-		Props.batch_add("stone_tile", Props.box_mesh(Vector3(1.0, 0.08, 0.8)), stone, Props.xf(Vector3(x, 0.03, z), Vector3(0, rnd.randf_range(-0.3, 0.3), 0), Vector3(rnd.randf_range(0.9, 1.5), 1, rnd.randf_range(0.8, 1.2))))
-		if rnd.randf() < 0.5:
-			Props.batch_add("stone_tile", Props.box_mesh(Vector3(1.0, 0.08, 0.8)), stone, Props.xf(Vector3(x + rnd.randf_range(-1.4, 1.4), 0.03, z + 0.5), Vector3(0, rnd.randf(), 0), Vector3(0.7, 1, 0.6)))
+		if rnd.randf() < 0.55:
+			Props.batch_add("stone_tile", Nature.rock_mesh(rnd.randi() % 4), Nature.rock_mat(Color(0.48, 0.47, 0.44)), Props.xf(Vector3(x, Terrain.ground_y(x, z) - 0.02, z), Vector3(0, rnd.randf() * TAU, 0), Vector3(rnd.randf_range(0.45, 0.7), 0.08, rnd.randf_range(0.35, 0.55))))
 		z -= 1.25
+	# cedros gigantes atrás do bambuzal e nas encostas
+	for i in 150:
+		var cz := rnd.randf_range(END_Z - 15, 15)
+		var side := -1.0 if rnd.randf() < 0.5 else 1.0
+		Nature.cedar(self, Vector3(px(cz) + side * rnd.randf_range(half_width(cz) + 6.0, 55.0), 0, cz), rnd, rnd.randf_range(0.9, 1.4), "cedar", false)
+	for i in 70:
+		var cz := rnd.randf_range(END_Z, 10)
+		var side := -1.0 if rnd.randf() < 0.5 else 1.0
+		Nature.fern(Vector3(px(cz) + side * rnd.randf_range(half_width(cz) - 1.0, half_width(cz) + 4.0), 0, cz), rnd, "green", rnd.randf_range(0.8, 1.5))
 	# bambuzal denso + paredes invisíveis seguindo a trilha
 	z = 8.0
 	while z > END_Z - 10:
@@ -61,10 +86,10 @@ func _build_world() -> void:
 				Props.grass_patch(Vector3(px(z) + side * rnd.randf_range(2.0, hw), 0, z), rnd, Color(0.35, 0.5, 0.2), 5)
 		z -= 2.2
 	# bambus distantes (fundo)
-	for i in 260:
+	for i in 90:
 		var zz := rnd.randf_range(END_Z - 20, 15)
 		var side := -1.0 if rnd.randf() < 0.5 else 1.0
-		Props.bamboo(self, Vector3(px(zz) + side * rnd.randf_range(16, 45), 0, zz), rnd)
+		Props.bamboo(self, Vector3(px(zz) + side * rnd.randf_range(12, 30), 0, zz), rnd)
 	z = 10.0
 	while z > END_Z - 10:
 		var z2 := z - 6.0

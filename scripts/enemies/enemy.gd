@@ -23,7 +23,7 @@ const TYPES := {
 		"name": "Samurai de Elite", "hp": 100.0, "walk": 2.0, "run": 5.0, "dmg": 15.0, "range": 2.2,
 		"cd": Vector2(1.1, 2.0), "block": 0.45, "view": 18.0, "fov": 130.0, "leash": 26.0,
 		"poise": 28.0, "windup": 0.48, "combo": 3, "ranged": false,
-		"look": {"helmet": "kabuto", "mask": true, "armor": Color(0.42, 0.05, 0.06), "armor2": Color(0.12, 0.1, 0.1), "trim": Color(0.08, 0.08, 0.08), "cloth": Color(0.1, 0.08, 0.08), "hakama": Color(0.12, 0.05, 0.05), "crest": Color(0.9, 0.7, 0.2)},
+		"look": {"helmet": "straw", "mask": false, "hair_style": "none", "armor": Color(0.12, 0.13, 0.16), "armor2": Color(0.2, 0.2, 0.24), "trim": Color(0.6, 0.06, 0.08), "cloth": Color(0.07, 0.07, 0.09), "hakama": Color(0.09, 0.09, 0.11), "crest": Color(0.75, 0.6, 0.3), "mon": false},
 	},
 	"archer": {
 		"name": "Arqueiro", "hp": 32.0, "walk": 1.8, "run": 4.0, "dmg": 9.0, "range": 1.6,

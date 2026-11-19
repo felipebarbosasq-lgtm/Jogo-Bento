@@ -19,6 +19,8 @@ uniform float moon_size = 0.05;
 uniform float moon_glow = 0.4;
 uniform float stars = 0.0;
 uniform float clouds = 0.3;
+uniform vec3 cloud_light : source_color = vec3(1.0, 0.98, 0.94);
+uniform vec3 cloud_shadow : source_color = vec3(0.55, 0.62, 0.75);
 
 float hash(vec3 p) {
 	p = fract(p * 0.3183099 + 0.1);
@@ -31,28 +33,41 @@ float vnoise(vec2 p) {
 	f = f * f * (3.0 - 2.0 * f);
 	return mix(mix(hash2(i), hash2(i + vec2(1.0, 0.0)), f.x), mix(hash2(i + vec2(0.0, 1.0)), hash2(i + vec2(1.0, 1.0)), f.x), f.y);
 }
+float fbm(vec2 p) {
+	float v = 0.0; float a = 0.5;
+	for (int i = 0; i < 5; i++) { v += a * vnoise(p); p = p * 2.03 + vec2(1.7, 9.2); a *= 0.5; }
+	return v;
+}
 
 void sky() {
 	vec3 d = normalize(EYEDIR);
 	float h = d.y;
-	vec3 col = mix(horizon_color, top_color, clamp(pow(max(h, 0.0), 0.55), 0.0, 1.0));
+	vec3 col = mix(horizon_color, top_color, clamp(pow(max(h, 0.0), 0.5), 0.0, 1.0));
 	col = mix(col, bottom_color, clamp(-h * 4.0, 0.0, 1.0));
 	vec3 md = normalize(moon_dir);
 	float c = dot(d, md);
 	float disc = smoothstep(cos(moon_size), cos(moon_size * 0.9), c);
-	float glow = pow(max(c, 0.0), 80.0) * moon_glow + pow(max(c, 0.0), 6.0) * moon_glow * 0.25;
+	float glow = pow(max(c, 0.0), 80.0) * moon_glow + pow(max(c, 0.0), 5.0) * moon_glow * 0.3;
+	col += moon_color * glow * 0.6;
 	if (stars > 0.0 && h > 0.0) {
-		vec3 p = floor(d * 220.0);
-		float s = step(0.996, hash(p));
+		vec3 p = floor(d * 260.0);
+		float s = step(0.996, hash(p)) * (0.5 + 0.5 * sin(TIME * 2.0 + hash(p + 1.0) * 30.0));
 		col += vec3(s * stars * clamp(h * 3.0, 0.0, 1.0));
 	}
-	if (clouds > 0.0 && h > 0.0) {
-		vec2 uv = d.xz / (h + 0.15) * 2.0 + vec2(TIME * 0.01, 0.0);
-		float n = vnoise(uv) * 0.6 + vnoise(uv * 2.3) * 0.3 + vnoise(uv * 5.1) * 0.1;
-		float cl = smoothstep(0.5, 0.85, n) * clouds * clamp(h * 4.0, 0.0, 1.0);
-		col = mix(col, horizon_color * 1.1 + moon_color * glow * 0.3, cl);
+	col += moon_color * disc * (1.0 - clamp(clouds, 0.0, 0.6));
+	if (clouds > 0.0 && h > -0.02) {
+		vec2 uv = d.xz / (h + 0.18) * 0.9 + vec2(TIME * 0.006, TIME * 0.002);
+		float n = fbm(uv);
+		float dens = smoothstep(0.42, 0.72, n) * clouds * smoothstep(-0.02, 0.18, h);
+		vec2 toward = normalize(md.xz + vec2(0.0001)) * 0.05;
+		float n_sun = fbm(uv + toward);
+		float lit = clamp(0.55 + (n - n_sun) * 6.0 + h * 0.6, 0.0, 1.0);
+		vec3 cc = mix(cloud_shadow, cloud_light, lit);
+		cc += moon_color * pow(max(c, 0.0), 6.0) * 0.6 * (1.0 - dens);
+		float edge = smoothstep(0.42, 0.5, n) - smoothstep(0.5, 0.7, n);
+		cc += moon_color * edge * pow(max(c, 0.0), 3.0) * 0.5;
+		col = mix(col, cc, clamp(dens * 1.4, 0.0, 1.0));
 	}
-	col += moon_color * (disc + glow);
 	COLOR = col;
 }
 """
@@ -284,10 +299,11 @@ static func xf(pos: Vector3, rot := Vector3.ZERO, scl := Vector3.ONE) -> Transfo
 
 # ------------------------------------------------------------------ vegetação
 static func bamboo(parent: Node, pos: Vector3, rnd: RandomNumberGenerator, collide := false) -> void:
-	var h := rnd.randf_range(7.0, 11.0)
+	pos = Nature.gy(pos)
+	var h := rnd.randf_range(9.0, 15.0)
 	var tilt := Vector3(rnd.randf_range(-0.06, 0.06), 0, rnd.randf_range(-0.06, 0.06))
 	var green := "bamboo%d" % rnd.randi_range(0, 2)
-	var cols := [Color(0.42, 0.55, 0.22), Color(0.36, 0.5, 0.2), Color(0.5, 0.58, 0.26)]
+	var cols := [Color(0.32, 0.42, 0.16), Color(0.26, 0.36, 0.14), Color(0.38, 0.44, 0.2)]
 	var c: Color = cols[int(green.right(1))]
 	var stalk := cyl_mesh(0.07, 0.09, 1.0, 6)
 	batch_add(green, stalk, mat(c, 0.6), xf(pos + Vector3(0, h * 0.5, 0), tilt, Vector3(1, h, 1)))
@@ -298,78 +314,56 @@ static func bamboo(parent: Node, pos: Vector3, rnd: RandomNumberGenerator, colli
 		batch_add("bamboo_ring", ring, mat(c.darkened(0.25), 0.6), xf(pos + Vector3(tilt.z * -k, k, tilt.x * k), tilt))
 		k += rnd.randf_range(1.2, 1.8)
 	# folhagem
-	var leaf := sphere_mesh(1.0, 6, 3)
-	for i in 3:
+	var leaf := Nature.blob(rnd.randi() % 4)
+	var lp: Array = Nature.PAL.bamboo
+	for i in 4:
 		var lh := h - rnd.randf_range(0.0, 2.5)
 		var off := Vector3(rnd.randf_range(-0.8, 0.8), 0, rnd.randf_range(-0.8, 0.8))
-		batch_add("bamboo_leaf", leaf, mat(Color(0.3, 0.48, 0.18), 0.9), xf(pos + off + Vector3(tilt.z * -lh, lh, tilt.x * lh), Vector3(0, rnd.randf() * TAU, 0), Vector3(1.2, 0.35, 0.7) * rnd.randf_range(0.8, 1.4)))
+		batch_add("bamboo_leaf", leaf, Shaders.foliage(lp[0], lp[1], 0.18, "bamboo"), xf(pos + off + Vector3(tilt.z * -lh, lh, tilt.x * lh), Vector3(0, rnd.randf() * TAU, 0), Vector3(1.4, 0.5, 0.9) * rnd.randf_range(0.8, 1.4)))
 	if collide:
 		var b := body(parent, pos)
 		add_cyl_shape(b, 0.12, 4.0, Vector3(0, 2, 0))
 
 
 static func cherry_tree(parent: Node, pos: Vector3, rnd: RandomNumberGenerator, s := 1.0, petal := Color(0.98, 0.66, 0.78)) -> void:
-	var trunk_c := Color(0.24, 0.14, 0.12)
-	var h := 3.2 * s
-	batch_add("ch_trunk", cyl_mesh(0.18, 0.32, 1.0, 7), mat(trunk_c), xf(pos + Vector3(0, h * 0.5, 0), Vector3(rnd.randf_range(-0.1, 0.1), 0, rnd.randf_range(-0.1, 0.1)), Vector3(s, h, s)))
-	for i in 3:
-		var a := rnd.randf() * TAU
-		var br := Vector3(cos(a), 0, sin(a))
-		batch_add("ch_branch", cyl_mesh(0.08, 0.14, 1.0, 5), mat(trunk_c), xf(pos + Vector3(0, h * 0.85, 0) + br * 0.7 * s, Vector3(sin(a) * 0.9, 0, -cos(a) * 0.9), Vector3(s, 1.8 * s, s)))
-	var leaf := sphere_mesh(1.0, 8, 5)
-	for i in 5:
-		var off := Vector3(rnd.randf_range(-1.6, 1.6), rnd.randf_range(-0.3, 0.9), rnd.randf_range(-1.6, 1.6)) * s
-		var col := petal.lightened(rnd.randf_range(-0.05, 0.12))
-		var key := "ch_leaf%d" % (i % 2)
-		batch_add(key, leaf, mat(col if i % 2 == 0 else petal.darkened(0.08), 0.95), xf(pos + Vector3(0, h + 0.6 * s, 0) + off, Vector3(0, rnd.randf() * TAU, 0), Vector3.ONE * rnd.randf_range(1.1, 1.7) * s))
-	var b := body(parent, pos)
-	add_cyl_shape(b, 0.3 * s, h, Vector3(0, h * 0.5, 0))
+	var pal := "cherry"
+	if petal.r > 0.6 and petal.g < 0.35:
+		pal = "maple"
+	elif petal.b > petal.r:
+		pal = "cherry"
+	Nature.big_tree(parent, pos, rnd, s * 0.95, pal)
 
 
 static func pine_tree(parent: Node, pos: Vector3, rnd: RandomNumberGenerator, s := 1.0, col := Color(0.12, 0.25, 0.18)) -> void:
-	var h := rnd.randf_range(6.0, 9.0) * s
-	batch_add("pine_trunk", cyl_mesh(0.18, 0.3, 1.0, 6), mat(Color(0.2, 0.13, 0.1)), xf(pos + Vector3(0, h * 0.25, 0), Vector3.ZERO, Vector3(s, h * 0.5, s)))
-	var cone := cyl_mesh(0.0, 1.0, 1.0, 7)
-	for i in 4:
-		var t := float(i) / 4.0
-		var r := (2.2 - t * 1.6) * s
-		batch_add("pine_cone%d" % (i % 2), cone, mat(col.lightened(0.04 * (i % 2)), 0.9), xf(pos + Vector3(0, h * (0.3 + t * 0.55), 0), Vector3(0, rnd.randf() * TAU, 0), Vector3(r, h * 0.35, r)))
-	var b := body(parent, pos)
-	add_cyl_shape(b, 0.35 * s, h * 0.6, Vector3(0, h * 0.3, 0))
+	Nature.pine(parent, pos, rnd, s, "night" if col.g < 0.16 else "deep")
 
 
 static func bush(pos: Vector3, rnd: RandomNumberGenerator, col := Color(0.2, 0.36, 0.16)) -> void:
-	var m := sphere_mesh(1.0, 7, 4)
-	for i in 3:
-		var off := Vector3(rnd.randf_range(-0.6, 0.6), 0.2, rnd.randf_range(-0.6, 0.6))
-		batch_add("bush", m, mat(col, 0.95), xf(pos + off, Vector3(0, rnd.randf() * TAU, 0), Vector3(0.9, 0.6, 0.8) * rnd.randf_range(0.6, 1.1)))
+	Nature.bush(pos, rnd, "night" if col.g < 0.2 else "green")
 
 
 static func grass_patch(pos: Vector3, rnd: RandomNumberGenerator, col := Color(0.32, 0.5, 0.2), count := 6) -> void:
-	var blade := prism_mesh(Vector3(0.12, 0.5, 0.02))
-	for i in count:
-		var off := Vector3(rnd.randf_range(-0.7, 0.7), 0.22, rnd.randf_range(-0.7, 0.7))
-		batch_add("grass", blade, mat(col, 1.0), xf(pos + off, Vector3(rnd.randf_range(-0.3, 0.3), rnd.randf() * TAU, 0), Vector3.ONE * rnd.randf_range(0.6, 1.3)))
+	if rnd.randf() < 0.5:
+		Nature.fern(pos, rnd, "night" if col.g < 0.32 else "green", 0.8)
 
 
 static func rock(parent: Node, pos: Vector3, s: Vector3, rnd: RandomNumberGenerator, col := Color(0.36, 0.36, 0.38), collide := true) -> void:
-	batch_add("rock", sphere_mesh(1.0, 6, 4), mat(col, 1.0), xf(pos, Vector3(rnd.randf() * 0.4, rnd.randf() * TAU, rnd.randf() * 0.4), s))
-	if collide:
-		var b := body(parent, pos)
-		var cs := CollisionShape3D.new()
-		var sh := SphereShape3D.new()
-		sh.radius = minf(s.x, s.z) * 0.9
-		cs.shape = sh
-		b.add_child(cs)
+	Nature.boulder(parent, pos, s, rnd, col.lightened(0.1), collide)
 
 
 static func mountain(parent: Node, pos: Vector3, r: float, h: float, col: Color, snow := false) -> void:
-	mesh(parent, cyl_mesh(r * 0.08, r, h, 8), pos + Vector3(0, h * 0.5, 0), mat(col, 1.0), Vector3(0, randf() * TAU, 0))
-	if snow:
-		mesh(parent, cyl_mesh(0.0, r * 0.3, h * 0.28, 8), pos + Vector3(0, h * 0.88, 0), mat(Color(0.9, 0.9, 0.95), 1.0))
+	var m := ShaderMaterial.new()
+	var sh := Shader.new()
+	sh.code = Nature.MOUNTAIN
+	m.shader = sh
+	m.set_shader_parameter("low", col.lightened(0.05))
+	m.set_shader_parameter("mid", col.lightened(0.25))
+	m.set_shader_parameter("h_mid", h * 0.4)
+	m.set_shader_parameter("h_snow", h * (0.7 if snow else 5.0))
+	var mi := mesh(parent, Nature.rock_mesh(randi() % 4), pos + Vector3(0, h * 0.35, 0), m, Vector3(0, randf() * TAU, 0), Vector3(r, h, r))
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
-# ------------------------------------------------------------- arquitetura
 static func torii(parent: Node, pos: Vector3, yaw := 0.0, s := 1.0, col := Color(0.72, 0.1, 0.08)) -> Node3D:
 	var root := Node3D.new()
 	root.position = pos
@@ -707,6 +701,8 @@ static func environment(parent: Node, cfg: Dictionary) -> DirectionalLight3D:
 	sm.set_shader_parameter("moon_glow", cfg.get("moon_glow", 0.4))
 	sm.set_shader_parameter("stars", cfg.get("stars", 0.0))
 	sm.set_shader_parameter("clouds", cfg.get("clouds", 0.3))
+	sm.set_shader_parameter("cloud_light", cfg.get("cloud_light", Color(1.0, 0.97, 0.92)))
+	sm.set_shader_parameter("cloud_shadow", cfg.get("cloud_shadow", Color(0.55, 0.6, 0.72)))
 	sky.sky_material = sm
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
@@ -727,6 +723,19 @@ static func environment(parent: Node, cfg: Dictionary) -> DirectionalLight3D:
 	env.adjustment_enabled = true
 	env.adjustment_contrast = cfg.get("contrast", 1.08)
 	env.adjustment_saturation = cfg.get("saturation", 1.05)
+	env.ssao_enabled = false
+	env.glow_enabled = false
+	if Game.post_mat:
+		var g: Dictionary = cfg.get("grade", {})
+		Game.post_mat.set_shader_parameter("lift", g.get("lift", Vector3(0.0, 0.0, 0.0)))
+		Game.post_mat.set_shader_parameter("gain", g.get("gain", Vector3(1.0, 1.0, 1.0)))
+		Game.post_mat.set_shader_parameter("saturation", g.get("saturation", 1.1))
+		Game.post_mat.set_shader_parameter("contrast", g.get("contrast", 1.08))
+		Game.post_mat.set_shader_parameter("vignette", g.get("vignette", 0.38))
+		Game.post_mat.set_shader_parameter("bloom", g.get("bloom", 0.35) * (0.0 if q == 0 else 1.0))
+		Game.post_mat.set_shader_parameter("bloom_threshold", g.get("threshold", 0.6))
+		Game.post_mat.set_shader_parameter("tint", g.get("tint", Color(1, 1, 1)))
+		Game.post_mat.set_shader_parameter("grain", 0.02 if q > 0 else 0.0)
 	var we := WorldEnvironment.new()
 	we.environment = env
 	parent.add_child(we)
@@ -737,7 +746,7 @@ static func environment(parent: Node, cfg: Dictionary) -> DirectionalLight3D:
 	sun.rotation_degrees = r
 	sun.shadow_enabled = q >= 1
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS if q == 2 else DirectionalLight3D.SHADOW_ORTHOGONAL
-	sun.directional_shadow_max_distance = 45.0 if q == 2 else 30.0
+	sun.directional_shadow_max_distance = [30.0, 45.0, 70.0][q]
 	sun.shadow_bias = 0.05
 	sun.shadow_blur = 1.5
 	parent.add_child(sun)

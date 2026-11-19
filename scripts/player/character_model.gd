@@ -32,6 +32,11 @@ var _flash_time := 0.0
 var step_callback: Callable
 var _last_step_sign := 0.0
 var aura: CPUParticles3D
+var cloth: Array = []      # [nó, rotação de repouso, amplitude, fase]
+var _caps := {}
+var _outline_mat: Material
+var _last_pos := Vector3.INF
+var _vel := Vector3.ZERO
 
 const PELVIS_H := 0.98
 
@@ -93,116 +98,195 @@ func _joint(name: String, parent: Node3D, pos: Vector3) -> Node3D:
 	return n
 
 
+func _cap(r: float, h: float) -> CapsuleMesh:
+	var key := "cap%.3f_%.3f" % [r, h]
+	if _caps.has(key):
+		return _caps[key]
+	var c := CapsuleMesh.new()
+	c.radius = r
+	c.height = maxf(h, r * 2.0 + 0.001)
+	c.radial_segments = 12
+	c.rings = 4
+	_caps[key] = c
+	return c
+
+
+func _sph(seg := 14, rings := 8) -> SphereMesh:
+	return Props.sphere_mesh(1.0, seg, rings)
+
+
+func _cloth(parent: Node3D, pos: Vector3, size: Vector3, material: Material, rest := Vector3.ZERO, amp := 1.0, tattered := false) -> Node3D:
+	## Peça de tecido pendurada que balança com o movimento e o vento.
+	var piv := Node3D.new()
+	piv.position = pos
+	piv.rotation = rest
+	parent.add_child(piv)
+	var segs := 3
+	var prev: Node3D = piv
+	var seg_h := size.y / segs
+	for k in segs:
+		var w := size.x * (1.0 - k * 0.12)
+		var mi := _part(prev, Props.box_mesh(Vector3(w, seg_h, size.z)), Vector3(0, -seg_h * 0.5, 0), material)
+		if tattered and k == segs - 1:
+			for t in 3:
+				_part(prev, Props.prism_mesh(Vector3(w / 3.0, seg_h * 0.5, size.z)), Vector3(-w / 3.0 + t * w / 3.0, -seg_h - seg_h * 0.2, 0), material, Vector3(PI, 0, 0))
+		var nxt := Node3D.new()
+		nxt.position = Vector3(0, -seg_h, 0)
+		prev.add_child(nxt)
+		cloth.append([prev, prev.rotation, amp * (0.6 + k * 0.4), randf() * TAU])
+		prev = nxt
+	return piv
+
+
 func _build() -> void:
 	var skin := _m(cfg.skin, 0.8)
-	var hair := _m(cfg.hair, 0.6)
-	var armor := _m(cfg.armor, 0.45, 0.35)
-	var armor2 := _m(cfg.armor2, 0.5, 0.25)
-	var trim := _m(cfg.trim, 0.7)
-	var cloth := _m(cfg.cloth, 0.9)
+	var hair := _m(cfg.hair, 0.55)
+	var armor := _m(cfg.armor, 0.4, 0.45)
+	var armor2 := _m(cfg.armor2, 0.5, 0.3)
+	var trim := _m(cfg.trim, 0.75)
+	var cloth_m := _m(cfg.cloth, 0.9)
 	var hakama := _m(cfg.hakama, 0.9)
 	var metal := _m(cfg.metal, 0.25, 0.8)
+	var glove := _m(Color(0.06, 0.05, 0.05), 0.7, 0.2)
+	var gold := _m(cfg.crest, 0.3, 0.8)
 
 	var root := _joint("root", self, Vector3.ZERO)
 	var pelvis := _joint("pelvis", root, Vector3(0, PELVIS_H, 0))
-	# quadril / obi
-	_part(pelvis, Props.box_mesh(Vector3(0.36, 0.2, 0.24)), Vector3(0, 0.0, 0), hakama)
-	_part(pelvis, Props.box_mesh(Vector3(0.4, 0.09, 0.27)), Vector3(0, 0.08, 0), trim)
-	# kusazuri (saia de placas)
-	for i in 4:
-		var a := -0.9 + i * 0.6
-		var p := _part(pelvis, Props.box_mesh(Vector3(0.17, 0.26, 0.04)), Vector3(sin(a) * 0.2, -0.1, -cos(a) * 0.15), armor, Vector3(-0.18, a, 0))
-		if i % 2 == 0:
-			_part(p, Props.box_mesh(Vector3(0.17, 0.02, 0.05)), Vector3(0, -0.06, 0), trim)
-	for i in 2:
-		var a := PI - 0.35 + i * 0.7
-		_part(pelvis, Props.box_mesh(Vector3(0.17, 0.26, 0.04)), Vector3(sin(a) * 0.2, -0.1, -cos(a) * 0.15), armor, Vector3(0.18, a, 0))
+	_part(pelvis, _sph(), Vector3(0, -0.02, 0), hakama, Vector3.ZERO, Vector3(0.2, 0.15, 0.15))
+	# obi (faixa) e nó
+	_part(pelvis, Props.cyl_mesh(1.0, 1.0, 1.0, 16), Vector3(0, 0.08, 0), trim, Vector3.ZERO, Vector3(0.205, 0.1, 0.155))
+	_part(pelvis, _sph(8, 5), Vector3(-0.08, 0.08, -0.15), trim, Vector3.ZERO, Vector3(0.05, 0.045, 0.035))
+	_cloth(pelvis, Vector3(-0.1, 0.06, -0.15), Vector3(0.06, 0.42, 0.012), trim, Vector3(0.05, 0, 0.12), 1.0, true)
+	_cloth(pelvis, Vector3(-0.15, 0.06, 0.1), Vector3(0.07, 0.55, 0.012), trim, Vector3(-0.08, 0, 0.18), 1.2, true)
+	# tare (pano frontal rasgado) e kusazuri (placas laterais)
+	_cloth(pelvis, Vector3(0, 0.0, -0.16), Vector3(0.16, 0.42, 0.015), _m(cfg.get("tare", cfg.trim.darkened(0.35)), 0.9), Vector3(0.1, 0, 0), 0.6, true)
+	for i in 5:
+		var a := PI * 0.35 + i * 0.32
+		var dir := Vector3(sin(a), 0, -cos(a))
+		var plate := _part(pelvis, Props.box_mesh(Vector3(0.15, 0.3, 0.025)), Vector3(dir.x * 0.2, -0.12, dir.z * 0.17), armor, Vector3(0.2 * (1.0 if dir.z < 0 else -1.0), a, 0))
+		for k in 3:
+			_part(plate, Props.box_mesh(Vector3(0.152, 0.012, 0.03)), Vector3(0, 0.1 - k * 0.09, 0), trim)
+		var mirror := _part(pelvis, Props.box_mesh(Vector3(0.15, 0.3, 0.025)), Vector3(-dir.x * 0.2, -0.12, dir.z * 0.17), armor, Vector3(0.2 * (1.0 if dir.z < 0 else -1.0), -a, 0))
+		for k in 3:
+			_part(mirror, Props.box_mesh(Vector3(0.152, 0.012, 0.03)), Vector3(0, 0.1 - k * 0.09, 0), trim)
 
 	var torso := _joint("torso", pelvis, Vector3(0, 0.1, 0))
-	# kimono
-	_part(torso, Props.box_mesh(Vector3(0.38, 0.5, 0.24)), Vector3(0, 0.25, 0), cloth)
-	# peitoral (dō)
-	_part(torso, Props.box_mesh(Vector3(0.42, 0.34, 0.28)), Vector3(0, 0.26, 0), armor)
-	_part(torso, Props.box_mesh(Vector3(0.43, 0.03, 0.29)), Vector3(0, 0.14, 0), trim)
-	_part(torso, Props.box_mesh(Vector3(0.43, 0.03, 0.29)), Vector3(0, 0.38, 0), trim)
-	# gola em V do kimono
-	_part(torso, Props.box_mesh(Vector3(0.06, 0.2, 0.02)), Vector3(-0.05, 0.5, -0.13), cloth, Vector3(0, 0, 0.5))
-	_part(torso, Props.box_mesh(Vector3(0.06, 0.2, 0.02)), Vector3(0.05, 0.5, -0.13), cloth, Vector3(0, 0, -0.5))
-	_part(torso, Props.box_mesh(Vector3(0.16, 0.12, 0.08)), Vector3(0, 0.55, 0), skin)
+	_part(torso, _cap(0.15, 0.56), Vector3(0, 0.28, 0), cloth_m, Vector3.ZERO, Vector3(1.25, 1.0, 0.85))
+	# dō (peitoral) arredondado com faixas de cordão
+	_part(torso, _sph(16, 8), Vector3(0, 0.3, -0.01), armor, Vector3.ZERO, Vector3(0.205, 0.2, 0.15))
+	for k in 4:
+		_part(torso, Props.cyl_mesh(1.0, 1.0, 1.0, 16), Vector3(0, 0.18 + k * 0.065, -0.01), trim, Vector3.ZERO, Vector3(0.203 - absf(k - 1.5) * 0.014, 0.01, 0.148 - absf(k - 1.5) * 0.012))
+	# gola em V e pescoço
+	for x in [-1.0, 1.0]:
+		_part(torso, Props.box_mesh(Vector3(0.05, 0.22, 0.02)), Vector3(x * 0.05, 0.5, -0.135), cloth_m, Vector3(0.2, 0, -x * 0.45))
+	_part(torso, _cap(0.065, 0.16), Vector3(0, 0.56, 0), skin)
 	if cfg.mon:
-		_part(torso, Props.cyl_mesh(0.032, 0.032, 0.01, 10), Vector3(0.1, 0.3, -0.146), _m(Color(0.55, 0.55, 0.58), 0.4, 0.6), Vector3(PI / 2, 0, 0))
+		_part(torso, Props.cyl_mesh(0.03, 0.03, 0.012, 12), Vector3(0.1, 0.32, -0.175), gold, Vector3(PI / 2, 0, 0))
+	if cfg.get("straps", false):
+		for x in [-1.0, 1.0]:
+			_part(torso, Props.box_mesh(Vector3(0.035, 0.6, 0.012)), Vector3(0, 0.32, -0.175), _m(Color(0.25, 0.15, 0.1), 0.8), Vector3(0, 0, x * 0.75))
 	if cfg.cape:
-		var cape := _part(torso, Props.box_mesh(Vector3(0.5, 1.1, 0.03)), Vector3(0, -0.05, 0.17), _m(cfg.trim.darkened(0.3), 0.9), Vector3(0.12, 0, 0))
-		cape.name = "cape"
+		var cape_m := _m(cfg.get("cape_color", cfg.trim.darkened(0.3)), 0.9)
+		for i in 5:
+			var x := -0.2 + i * 0.1
+			_cloth(torso, Vector3(x, 0.52, 0.16), Vector3(0.11, 1.15 + (i % 2) * 0.15, 0.012), cape_m, Vector3(0.18, 0, x * 0.3), 1.3, true)
 
 	# cabeça
-	var head := _joint("head", torso, Vector3(0, 0.6, 0))
-	_part(head, Props.sphere_mesh(0.12, 12, 8), Vector3(0, 0.12, 0), skin, Vector3.ZERO, Vector3(0.92, 1.08, 1.0))
-	# olhos
+	var head := _joint("head", torso, Vector3(0, 0.62, 0))
+	_part(head, _sph(16, 10), Vector3(0, 0.12, 0), skin, Vector3.ZERO, Vector3(0.11, 0.13, 0.118))
+	_part(head, _sph(10, 6), Vector3(0, 0.05, -0.035), skin, Vector3.ZERO, Vector3(0.085, 0.07, 0.08))  # mandíbula
+	_part(head, Props.prism_mesh(Vector3(0.025, 0.04, 0.025)), Vector3(0, 0.1, -0.12), skin, Vector3(-0.3, 0, 0))  # nariz
 	var eye_col: Color = cfg.eyes
-	var eye_mat := _m(Color(0.05, 0.04, 0.04), 0.5) if eye_col.a == 0.0 else _m(eye_col, 0.5, 0.0, 4.0)
+	var eye_mat := _m(Color(0.04, 0.03, 0.03), 0.5) if eye_col.a == 0.0 else _m(eye_col, 0.5, 0.0, 5.0)
 	for x in [-0.045, 0.045]:
-		_part(head, Props.box_mesh(Vector3(0.035, 0.014, 0.01)), Vector3(x, 0.13, -0.112), eye_mat)
-		_part(head, Props.box_mesh(Vector3(0.05, 0.01, 0.012)), Vector3(x, 0.155, -0.11), hair, Vector3(0, 0, -0.25 if x < 0 else 0.25))
+		_part(head, Props.box_mesh(Vector3(0.036, 0.012, 0.01)), Vector3(x, 0.13, -0.112), eye_mat, Vector3(0, 0, -x * 3.0))
+		_part(head, Props.box_mesh(Vector3(0.05, 0.012, 0.014)), Vector3(x, 0.153, -0.108), hair, Vector3(0, 0, -0.3 if x < 0 else 0.3))
 	_build_hair(head, hair, trim)
 	_build_helmet(head, armor, armor2, trim)
 
 	# braços
 	for side in ["r", "l"]:
 		var sx := 1.0 if side == "r" else -1.0
-		var sh := _joint("sh_" + side, torso, Vector3(0.25 * sx, 0.46, 0))
-		# sode (ombreira em camadas)
+		var sh := _joint("sh_" + side, torso, Vector3(0.26 * sx, 0.46, 0))
+		_part(sh, _sph(), Vector3(0.02 * sx, -0.02, 0), cloth_m, Vector3.ZERO, Vector3(0.08, 0.08, 0.08))
 		var sode := Node3D.new()
-		sode.position = Vector3(0.05 * sx, 0.03, 0)
-		sode.rotation = Vector3(0, 0, 0.35 * sx)
+		sode.position = Vector3(0.06 * sx, 0.04, 0)
+		sode.rotation = Vector3(0, 0, 0.32 * sx)
 		sh.add_child(sode)
-		for k in 3:
-			_part(sode, Props.box_mesh(Vector3(0.15 - k * 0.01, 0.055, 0.2)), Vector3(0.012 * sx * k, -0.03 - k * 0.055, 0), armor)
-			_part(sode, Props.box_mesh(Vector3(0.152 - k * 0.01, 0.01, 0.202)), Vector3(0.012 * sx * k, -0.058 - k * 0.055, 0), trim)
-		_part(sh, Props.cyl_mesh(0.06, 0.055, 0.3, 8), Vector3(0, -0.15, 0), cloth)
+		for k in 4:
+			_part(sode, Props.box_mesh(Vector3(0.028, 0.058, 0.2 - k * 0.006)), Vector3(0.05 * sx + 0.012 * sx * k, -0.03 - k * 0.052, 0), armor)
+			_part(sode, Props.box_mesh(Vector3(0.03, 0.009, 0.202 - k * 0.006)), Vector3(0.05 * sx + 0.012 * sx * k, -0.058 - k * 0.052, 0), trim)
+		_part(sh, _cap(0.058, 0.32), Vector3(0, -0.15, 0), cloth_m)
 		var el := _joint("el_" + side, sh, Vector3(0, -0.3, 0))
-		_part(el, Props.cyl_mesh(0.052, 0.045, 0.27, 8), Vector3(0, -0.13, 0), armor2)
-		# kote (bracelete com cordões)
-		_part(el, Props.box_mesh(Vector3(0.11, 0.16, 0.11)), Vector3(0, -0.15, 0), armor)
-		_part(el, Props.box_mesh(Vector3(0.115, 0.02, 0.115)), Vector3(0, -0.1, 0), trim)
-		_part(el, Props.box_mesh(Vector3(0.115, 0.02, 0.115)), Vector3(0, -0.19, 0), trim)
+		_part(el, _cap(0.05, 0.28), Vector3(0, -0.13, 0), armor2)
+		_part(el, Props.cyl_mesh(0.062, 0.055, 0.17, 10), Vector3(0, -0.15, 0), armor)
+		for k in 2:
+			_part(el, Props.cyl_mesh(0.064, 0.064, 0.015, 10), Vector3(0, -0.09 - k * 0.11, 0), trim)
 		var hand := Node3D.new()
 		hand.name = "hand_" + side
 		hand.position = Vector3(0, -0.29, 0)
 		el.add_child(hand)
 		j["hand_" + side] = hand
-		_part(hand, Props.box_mesh(Vector3(0.08, 0.09, 0.09)), Vector3(0, -0.02, 0), _m(Color(0.08, 0.07, 0.07), 0.8))
+		_part(hand, _sph(10, 6), Vector3(0, -0.02, 0), glove, Vector3.ZERO, Vector3(0.045, 0.05, 0.05))
 
 	# pernas
 	for side in ["r", "l"]:
 		var sx := 1.0 if side == "r" else -1.0
 		var hp := _joint("hip_" + side, pelvis, Vector3(0.11 * sx, -0.06, 0))
-		_part(hp, Props.cyl_mesh(0.1, 0.13, 0.46, 8), Vector3(0, -0.21, 0), hakama)
+		_part(hp, Props.cyl_mesh(0.11, 0.15, 0.46, 12), Vector3(0, -0.21, 0), hakama)
 		var kn := _joint("kn_" + side, hp, Vector3(0, -0.44, 0))
-		_part(kn, Props.cyl_mesh(0.11, 0.075, 0.3, 8), Vector3(0, -0.12, 0), hakama)
-		# suneate (caneleira)
-		_part(kn, Props.box_mesh(Vector3(0.1, 0.26, 0.06)), Vector3(0, -0.24, -0.06), armor)
-		_part(kn, Props.box_mesh(Vector3(0.105, 0.015, 0.065)), Vector3(0, -0.18, -0.06), trim)
-		_part(kn, Props.box_mesh(Vector3(0.1, 0.06, 0.24)), Vector3(0, -0.47, -0.05), _m(Color(0.1, 0.08, 0.07), 0.9))
+		_part(kn, Props.cyl_mesh(0.13, 0.07, 0.3, 12), Vector3(0, -0.12, 0), hakama)
+		_part(kn, _cap(0.055, 0.3), Vector3(0, -0.3, 0), hakama)
+		# suneate e joelheira
+		_part(kn, Props.cyl_mesh(0.065, 0.06, 0.26, 8), Vector3(0, -0.28, -0.02), armor, Vector3.ZERO, Vector3(1.0, 1.0, 1.1))
+		_part(kn, _sph(10, 6), Vector3(0, -0.02, -0.05), armor, Vector3.ZERO, Vector3(0.07, 0.06, 0.05))
+		_part(kn, Props.cyl_mesh(0.067, 0.067, 0.012, 8), Vector3(0, -0.2, -0.02), trim)
+		# bota
+		_part(kn, _cap(0.055, 0.24), Vector3(0, -0.47, -0.05), glove, Vector3(PI / 2, 0, 0))
 
 	_build_weapon(metal, trim)
+	_apply_outline()
+
+
+func _apply_outline() -> void:
+	if Game.quality_level() == 0:
+		return
+	var w: float = 0.007 * float(cfg.get("outline", 1.0))
+	_outline_mat = Shaders.outline(w)
+	for mi in meshes:
+		if is_instance_valid(mi):
+			mi.material_overlay = _outline_mat
 
 
 func _build_hair(head: Node3D, hair: Material, trim: Material) -> void:
+	var tip_c: Color = cfg.get("hair_tip", cfg.hair)
+	var tip := _m(tip_c, 0.55)
 	match str(cfg.hair_style):
 		"shin":
-			# cabelo preto despenteado, médio, com mechas na testa
-			_part(head, Props.sphere_mesh(0.135, 10, 6), Vector3(0, 0.17, 0.02), hair, Vector3.ZERO, Vector3(1.0, 0.85, 1.05))
-			for i in 7:
-				var a := -1.2 + i * 0.4
-				_part(head, Props.prism_mesh(Vector3(0.07, 0.16, 0.05)), Vector3(sin(a) * 0.09, 0.2, -0.1 + abs(a) * 0.03), hair, Vector3(-2.3, 0, a * 0.6))
-			for i in 6:
-				var a := PI * 0.6 + i * 0.35
-				_part(head, Props.prism_mesh(Vector3(0.08, 0.22, 0.05)), Vector3(sin(a) * 0.11, 0.1, -cos(a) * 0.1), hair, Vector3(2.6, a, 0))
+			# cabelo preto despenteado com pontas avermelhadas
+			_part(head, _sph(), Vector3(0, 0.17, 0.015), hair, Vector3.ZERO, Vector3(0.128, 0.1, 0.132))
+			for i in 9:
+				var a := -1.3 + i * 0.32
+				var spike := _part(head, Props.prism_mesh(Vector3(0.07, 0.17, 0.05)), Vector3(sin(a) * 0.095, 0.21, -0.095 + absf(a) * 0.03), hair if i % 3 else tip, Vector3(-2.25, 0, a * 0.65))
+			for i in 9:
+				var a := PI * 0.45 + i * 0.25
+				_part(head, Props.prism_mesh(Vector3(0.085, 0.24, 0.05)), Vector3(sin(a) * 0.11, 0.14, -cos(a) * 0.1), tip if i % 2 else hair, Vector3(2.5 + (i % 3) * 0.15, a, 0))
+			for i in 5:
+				var a := -1.0 + i * 0.5
+				_part(head, Props.prism_mesh(Vector3(0.06, 0.16, 0.04)), Vector3(sin(a) * 0.08, 0.27, 0.0), hair, Vector3(0.2 * cos(a), 0, a * 0.5))
 			for x in [-1.0, 1.0]:
-				_part(head, Props.box_mesh(Vector3(0.03, 0.16, 0.08)), Vector3(x * 0.115, 0.08, -0.02), hair, Vector3(0, 0, x * 0.08))
+				_part(head, Props.box_mesh(Vector3(0.025, 0.17, 0.08)), Vector3(x * 0.112, 0.08, -0.02), hair, Vector3(0, 0, x * 0.08))
+		"long_silver":
+			# longos cabelos prateados que caem pelas costas
+			_part(head, _sph(), Vector3(0, 0.17, 0.02), hair, Vector3.ZERO, Vector3(0.13, 0.11, 0.135))
+			for i in 7:
+				var x := -0.11 + i * 0.037
+				_cloth(head, Vector3(x, 0.16, 0.1), Vector3(0.05, 0.75 + (i % 3) * 0.12, 0.02), hair, Vector3(0.25, 0, x * 1.2), 0.9)
+			for x in [-1.0, 1.0]:
+				_cloth(head, Vector3(x * 0.1, 0.14, -0.04), Vector3(0.04, 0.42, 0.02), hair, Vector3(-0.05, 0, x * 0.15), 0.6)
+			_part(head, Props.prism_mesh(Vector3(0.18, 0.08, 0.05)), Vector3(0, 0.22, -0.1), hair, Vector3(-2.6, 0, 0))
 		"topknot":
-			_part(head, Props.sphere_mesh(0.125, 10, 6), Vector3(0, 0.16, 0.02), hair, Vector3.ZERO, Vector3(1.0, 0.8, 1.0))
+			_part(head, _sph(), Vector3(0, 0.16, 0.02), hair, Vector3.ZERO, Vector3(0.125, 0.1, 0.125))
 			_part(head, Props.cyl_mesh(0.025, 0.03, 0.12, 6), Vector3(0, 0.29, 0.03), hair, Vector3(-0.9, 0, 0))
 		_:
 			pass
@@ -210,21 +294,28 @@ func _build_hair(head: Node3D, hair: Material, trim: Material) -> void:
 
 func _build_helmet(head: Node3D, armor: Material, armor2: Material, trim: Material) -> void:
 	match str(cfg.helmet):
-		"jingasa":
-			var hat := _m(Color(0.3, 0.22, 0.14), 0.8)
-			_part(head, Props.cyl_mesh(0.03, 0.34, 0.16, 12), Vector3(0, 0.3, 0), hat)
-			_part(head, Props.cyl_mesh(0.34, 0.34, 0.01, 12), Vector3(0, 0.22, 0), _m(Color(0.15, 0.1, 0.06)))
+		"jingasa", "straw":
+			var big: bool = cfg.helmet == "straw"
+			var hat := _m(Color(0.32, 0.24, 0.14) if not big else Color(0.12, 0.1, 0.09), 0.85)
+			var r := 0.34 if not big else 0.46
+			_part(head, Props.cyl_mesh(0.02, r, 0.17 if not big else 0.2, 20), Vector3(0, 0.3, 0), hat, Vector3(0.08 if big else 0.0, 0, 0))
+			for k in 6:
+				_part(head, Props.box_mesh(Vector3(0.006, 0.19, r * 1.02)), Vector3(0, 0.3, 0), _m(Color(0.0, 0.0, 0.0, 1.0).lerp(hat.albedo_color, 0.6)), Vector3(0.95, k * PI / 6.0, 0))
+			_part(head, Props.cyl_mesh(r, r, 0.012, 20), Vector3(0, 0.215, 0), _m(Color(0.1, 0.07, 0.05)))
+		"hood":
+			# capuz escuro com rosto na sombra (inspirado no guerreiro encapuzado)
+			var hood := _m(cfg.get("hood_color", Color(0.06, 0.06, 0.08)), 0.95)
+			_part(head, _sph(), Vector3(0, 0.15, 0.03), hood, Vector3.ZERO, Vector3(0.16, 0.18, 0.17))
+			_part(head, Props.prism_mesh(Vector3(0.22, 0.2, 0.2)), Vector3(0, 0.3, 0.02), hood, Vector3(-0.2, 0, 0))
+			_part(head, _sph(), Vector3(0, 0.11, -0.06), _m(Color(0.0, 0.0, 0.0), 1.0), Vector3.ZERO, Vector3(0.1, 0.11, 0.08))
+			_cloth(head, Vector3(0, 0.05, 0.12), Vector3(0.26, 0.4, 0.02), hood, Vector3(0.2, 0, 0), 0.8, true)
 		"kabuto", "oni":
-			_part(head, Props.sphere_mesh(0.15, 12, 6), Vector3(0, 0.19, 0.01), armor, Vector3.ZERO, Vector3(1.0, 0.85, 1.05))
-			# shikoro (protetor de nuca)
+			_part(head, _sph(16, 8), Vector3(0, 0.19, 0.01), armor, Vector3.ZERO, Vector3(0.15, 0.13, 0.158))
 			for k in 3:
-				_part(head, Props.cyl_mesh(0.17 + k * 0.025, 0.19 + k * 0.025, 0.05, 12), Vector3(0, 0.12 - k * 0.05, 0.03), armor if k % 2 == 0 else trim)
-			# fukigaeshi
+				_part(head, Props.cyl_mesh(0.17 + k * 0.025, 0.19 + k * 0.025, 0.05, 16), Vector3(0, 0.12 - k * 0.05, 0.03), armor if k % 2 == 0 else trim)
 			for x in [-1.0, 1.0]:
 				_part(head, Props.box_mesh(Vector3(0.1, 0.09, 0.02)), Vector3(x * 0.17, 0.16, -0.09), armor2, Vector3(0, x * 0.5, 0))
-			# viseira
 			_part(head, Props.box_mesh(Vector3(0.3, 0.02, 0.08)), Vector3(0, 0.23, -0.13), armor)
-			# crista (kuwagata) — chifres
 			var crest := _m(cfg.crest, 0.3, 0.7, 0.4)
 			if cfg.helmet == "oni":
 				for x in [-1.0, 1.0]:
@@ -234,6 +325,12 @@ func _build_helmet(head: Node3D, armor: Material, armor2: Material, trim: Materi
 				for x in [-1.0, 1.0]:
 					_part(head, Props.box_mesh(Vector3(0.025, 0.28, 0.015)), Vector3(x * 0.09, 0.39, -0.12), crest, Vector3(-0.15, 0, -x * 0.35))
 				_part(head, Props.cyl_mesh(0.04, 0.04, 0.015, 10), Vector3(0, 0.3, -0.14), crest, Vector3(PI / 2, 0, 0))
+		"oni_crown":
+			# tiara com chifres sobre o cabelo solto (Lorde Akuma)
+			var crest := _m(cfg.crest, 0.3, 0.7, 0.6)
+			_part(head, Props.cyl_mesh(0.14, 0.14, 0.03, 16), Vector3(0, 0.2, 0), _m(Color(0.1, 0.05, 0.05), 0.4, 0.6))
+			for x in [-1.0, 1.0]:
+				_part(head, Props.cyl_mesh(0.004, 0.03, 0.26, 6), Vector3(x * 0.09, 0.32, -0.05), crest, Vector3(-0.35, 0, -x * 0.5))
 	if cfg.mask:
 		var mask_col: Color = cfg.trim if cfg.helmet != "oni" else Color(0.55, 0.04, 0.05)
 		_part(head, Props.box_mesh(Vector3(0.2, 0.11, 0.06)), Vector3(0, 0.06, -0.1), _m(mask_col, 0.5, 0.2))
@@ -272,6 +369,21 @@ func _build_weapon(metal: Material, trim: Material) -> void:
 				# wakizashi (espada curta) também na cintura
 				_part(saya, Props.box_mesh(Vector3(0.035, 0.05, 0.55)), Vector3(0.05, 0.03, -0.15), _m(Color(0.07, 0.05, 0.05), 0.4, 0.2))
 				_part(saya, Props.box_mesh(Vector3(0.03, 0.03, 0.16)), Vector3(0.05, 0.03, 0.2), trim)
+		"scimitar":
+			# lâminas curvas ornamentadas (empunhadura dupla)
+			for hn in (["hand_r", "hand_l"] if cfg.get("dual", false) else ["hand_r"]):
+				var holder: Node3D = wpn
+				if hn == "hand_l":
+					holder = Node3D.new()
+					(j["hand_l"] as Node3D).add_child(holder)
+					holder.position = Vector3(0, -0.03, 0)
+					holder.rotation = Vector3(-0.9, 0, 0)
+				_part(holder, Props.box_mesh(Vector3(0.035, 0.035, 0.22)), Vector3(0, 0, 0.03), handle_m)
+				_part(holder, Props.box_mesh(Vector3(0.14, 0.03, 0.03)), Vector3(0, 0, -0.09), _m(cfg.crest, 0.3, 0.8))
+				for k in 5:
+					var t := float(k) / 5.0
+					_part(holder, Props.box_mesh(Vector3(0.012, 0.075 - t * 0.035, 0.26)), Vector3(0, t * t * 0.26, -0.22 - t * 0.19), blade_mat, Vector3(-t * 0.5, 0, 0))
+			weapon_tip.position = Vector3(0, 0.3, -1.0)
 		"spear":
 			_part(wpn, Props.cyl_mesh(0.02, 0.02, 2.2, 6), Vector3(0, 0, -0.5), _m(Color(0.25, 0.15, 0.08)), Vector3(PI / 2, 0, 0))
 			_part(wpn, Props.prism_mesh(Vector3(0.06, 0.3, 0.015)), Vector3(0, 0, -1.75), blade_mat, Vector3(-PI / 2, 0, 0))
@@ -364,7 +476,7 @@ func _process(delta: float) -> void:
 		if _flash_time <= 0.0:
 			for mi in meshes:
 				if is_instance_valid(mi):
-					mi.material_overlay = null
+					mi.material_overlay = _outline_mat
 	var target := _compute_pose(delta)
 	var blend := 22.0 if action != "" else 11.0
 	var k := clampf(blend * delta, 0.0, 1.0)
@@ -379,6 +491,7 @@ func _process(delta: float) -> void:
 			cur[name] = cv
 		node.rotation = cv
 	_cur_lift = lerpf(_cur_lift, lift, k)
+	_update_cloth(delta)
 	(j["pelvis"] as Node3D).position.y = PELVIS_H + _cur_lift
 
 
@@ -744,3 +857,27 @@ func _pose_victory(p: Dictionary, t: float) -> void:
 	p.head = Vector3(0.3 * _seg(t, 0.6, 1.0), 0, 0)
 	p.sh_l = Vector3(0.2, 0, -0.1)
 	p.el_l = Vector3(0.4, 0, 0)
+
+
+func _update_cloth(delta: float) -> void:
+	if cloth.is_empty() or not is_inside_tree():
+		return
+	var gp := global_position
+	if _last_pos != Vector3.INF and delta > 0.0:
+		_vel = _vel.lerp((gp - _last_pos) / delta, clampf(delta * 6.0, 0, 1))
+	_last_pos = gp
+	var local := global_transform.basis.inverse() * _vel
+	var spd := Vector2(local.x, local.z).length()
+	var spin := 1.0 if action in ["special", "spin", "dodge"] else 0.0
+	for c in cloth:
+		var n: Node3D = c[0]
+		if not is_instance_valid(n):
+			continue
+		var rest: Vector3 = c[1]
+		var amp: float = c[2]
+		var ph: float = c[3]
+		var flutter := sin(_t * (5.0 + spd) + ph) * 0.06 * amp * (0.4 + spd * 0.3 + spin)
+		var tx := rest.x + clampf(local.z * 0.09, -0.9, 0.5) * amp + flutter - spin * 0.6
+		var tz := rest.z + clampf(-local.x * 0.06, -0.5, 0.5) * amp + flutter * 0.5
+		n.rotation.x = lerpf(n.rotation.x, tx, clampf(delta * 8.0, 0, 1))
+		n.rotation.z = lerpf(n.rotation.z, tz, clampf(delta * 8.0, 0, 1))

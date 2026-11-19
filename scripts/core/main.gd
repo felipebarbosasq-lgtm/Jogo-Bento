@@ -27,6 +27,17 @@ func _ready() -> void:
 	world.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(world)
 
+	# pós-processamento cinematográfico (bloom, color grading, vinheta, grão)
+	var post_layer := CanvasLayer.new()
+	post_layer.layer = 1
+	add_child(post_layer)
+	var post := ColorRect.new()
+	post.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	post.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	post.material = Shaders.post()
+	post_layer.add_child(post)
+	Game.post_mat = post.material
+
 	hud = HUD.new()
 	hud.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(hud)
@@ -86,7 +97,11 @@ func _args() -> Dictionary:
 
 func _auto_screenshot(path: String, open_pause: bool) -> void:
 	## Ferramenta de teste: salva uma captura de tela após alguns segundos.
-	await get_tree().create_timer(4.0).timeout
+	await get_tree().create_timer(1.0).timeout
+	while _loading:
+		await get_tree().process_frame
+	var extra := float(_args().get("wait", "3.0"))
+	await get_tree().create_timer(extra).timeout
 	if open_pause:
 		toggle_pause()
 	await get_tree().create_timer(0.8).timeout
@@ -153,7 +168,14 @@ func _start_level(idx: int, stage: int) -> void:
 	await _fade_out(0.8)
 	_clear_ui()
 	_unload_level()
-	await get_tree().process_frame
+	hud.visible = false
+	touch.visible = false
+	var loading := LoadingScreen.new()
+	loading.level_index = idx
+	ui.add_child(loading)
+	var shown_at := Time.get_ticks_msec()
+	_fade_in(0.6)
+	await get_tree().create_timer(0.7).timeout
 	get_tree().paused = false
 	Game.reset_time_scale()
 	Game.level_index = idx
@@ -166,11 +188,17 @@ func _start_level(idx: int, stage: int) -> void:
 	world.add_child(level)
 	level.level_completed.connect(_on_level_completed)
 	level.player_died.connect(_on_player_died)
-	hud.visible = true
-	touch.visible = Game.is_touch()
 	touch.release_all()
 	Game.in_game = true
 	_ended = false
+	var wait_ms := 3200 - (Time.get_ticks_msec() - shown_at)
+	if wait_ms > 0 and not _args().has("autotest"):
+		await get_tree().create_timer(wait_ms / 1000.0).timeout
+	await _fade_out(0.6)
+	if is_instance_valid(loading):
+		loading.queue_free()
+	hud.visible = true
+	touch.visible = Game.is_touch()
 	if not Game.is_touch() and DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_loading = false

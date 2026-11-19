@@ -16,8 +16,11 @@ const SHIN_LOOK := {
 	"cloth": Color(0.08, 0.08, 0.1),
 	"hakama": Color(0.06, 0.06, 0.07),
 	"hair_style": "shin",
+	"hair_tip": Color(0.42, 0.04, 0.05),
 	"helmet": "none",
 	"weapon": "katana",
+	"crest": Color(0.7, 0.68, 0.7),
+	"outline": 1.0,
 }
 
 const WALK_SPEED := 3.4

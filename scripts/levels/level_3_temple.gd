@@ -22,14 +22,32 @@ func _build_world() -> void:
 		"sky_top": Color(0.02, 0.03, 0.08), "sky_horizon": Color(0.1, 0.13, 0.22), "sky_bottom": Color(0.03, 0.03, 0.05),
 		"moon_dir": Vector3(-0.3, 0.45, -1.0), "moon_color": Color(0.85, 0.9, 1.0), "moon_size": 0.045, "moon_glow": 0.7,
 		"stars": 0.9, "clouds": 0.2,
-		"fog_color": Color(0.08, 0.1, 0.16), "fog_density": 0.03, "fog_sky": 0.2,
-		"ambient": Color(0.3, 0.35, 0.55), "ambient_energy": 0.55, "sun_color": Color(0.55, 0.65, 0.95), "sun_energy": 0.55,
-		"sun_rot": Vector3(-45, 20, 0), "exposure": 1.1,
+		"fog_color": Color(0.08, 0.14, 0.18), "fog_density": 0.022, "fog_sky": 0.2,
+		"cloud_light": Color(0.5, 0.58, 0.7), "cloud_shadow": Color(0.06, 0.08, 0.14),
+		"ambient": Color(0.26, 0.36, 0.5), "ambient_energy": 0.6, "sun_color": Color(0.6, 0.72, 1.0), "sun_energy": 0.6,
+		"sun_rot": Vector3(-45, 20, 0), "exposure": 1.15,
+		"grade": {"lift": Vector3(0.0, 0.025, 0.05), "gain": Vector3(0.95, 1.02, 1.08), "saturation": 1.05, "contrast": 1.12, "bloom": 0.5, "threshold": 0.55},
 	})
+	var ter := make_terrain(Vector2(160, 300), Vector3(0, 0, -115), {"grass_a": Color(0.03, 0.06, 0.06), "grass_b": Color(0.06, 0.11, 0.09), "dirt": Color(0.2, 0.18, 0.15), "rock": Color(0.28, 0.3, 0.34), "moss": Color(0.08, 0.2, 0.1)})
+	ter.segs.append([Vector3(0, 0, 12), Vector3(0, 0, -115), 9.5])
+	ter.rects.append([Vector2(-26, -242), Vector2(26, -147)])
+	ter.pits.append([Vector2(-80, -146.5), Vector2(80, -115.6)])
+	ter.paths.append([Vector3(0, 0, 6), Vector3(0, 0, -58), 2.0])
+	ter.rise = 9.0
+	ter.hill = 18.0
+	ter.build(self)
+	ter.scatter_grass(self, 9000, Color(0.02, 0.05, 0.05), Color(0.08, 0.15, 0.14), [Color(0.6, 0.8, 1.0), Color(0.85, 0.75, 1.0)], 0.08, 30.0)
+	Nature.mountain_range(self, Vector3(0, 0, -115), 230.0, 380.0, 150.0, [Color(0.04, 0.08, 0.08), Color(0.16, 0.18, 0.24), Color(0.6, 0.66, 0.78)], 17)
+	Nature.light_shafts(self, Vector3(0, 0, -30), Vector2(7, 30), 12, Vector3(-45, 20, 0), Color(0.55, 0.7, 1.0), 0.14)
+	for i in 110:
+		var cz := rnd.randf_range(-240, 15)
+		if cz < -114.0 and cz > -148.0:
+			continue
+		var side := -1.0 if rnd.randf() < 0.5 else 1.0
+		var cx := side * rnd.randf_range(11.0 if cz > -114.0 else 28.0, 60.0)
+		Nature.cedar(self, Vector3(cx, 0, cz), rnd, rnd.randf_range(0.9, 1.3), "night", false)
 	var dirt := Color(0.12, 0.13, 0.1)
 	# chão em partes: há um abismo sob a ponte (z -116 a -146)
-	ground_plane(Vector2(90, 130), Vector3(0, 0, -50), dirt)
-	ground_plane(Vector2(90, 90), Vector3(0, 0, -192), dirt)
 	Props.ground(self, Vector2(200, 400), Vector3(0, -40, -120), Props.mat(Color(0.02, 0.02, 0.03)))
 	# névoa no fundo do abismo
 	Props.mesh(self, Props.box_mesh(Vector3(90, 0.1, 30)), Vector3(0, -6, -131), Props.unshaded(Color(0.4, 0.45, 0.6, 0.25)))

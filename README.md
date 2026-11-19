@@ -6,11 +6,41 @@ Shin Kurogane, último guerreiro do clã Kurogane, desperta numa floresta de bam
 **Lorde Akuma** arrasou sua aldeia sob a Lua Sangrenta. Ele precisa recuperar a espada lendária **Tsukikage**
 antes de Akuma e encerrar a guerra num duelo final no castelo.
 
+## Jogar no navegador
+
+Versão Web (Edição Cinematográfica): **https://claude.ai/artifact/TnnhHFT6wR9bivjosMVAH5**
+— clique em **JOGAR**. Melhor no Chrome/Edge/Firefox de computador; no celular, use paisagem.
+
+Para gerar a versão Web você mesmo:
+
+```bash
+godot --headless --path . --export-release "Web" build/web/index.html
+python3 tools/web/make_page.py build/web build/webpub   # divide o motor em partes de 12 MB + página play.html
+```
+
+Qualquer servidor estático serve `build/web/` diretamente (por exemplo, GitHub Pages ou itch.io), sem cabeçalhos especiais
+(exportação sem threads).
+
+---
+
+## Edição Cinematográfica (v2.0)
+
+- Terreno com relevo procedural: trilhas planas jogáveis cercadas por encostas, colinas, rochas com musgo e riachos.
+- Vegetação com shaders de vento: cedros gigantes, bambuzais, árvores frondosas, bordos vermelhos, cerejeiras,
+  pinheiros, samambaias e milhares de tufos de capim e flores.
+- Céu com nuvens volumosas iluminadas pelo sol/lua, cordilheiras nevadas ao redor de cada mapa, raios de luz entre as árvores.
+- Pós-processamento: bloom, color grading por fase, vinheta, aberração cromática sutil e grão de filme.
+- Personagens redesenhados a partir das referências: Shin (cabelo com pontas vermelhas, faixas e tecidos que balançam),
+  samurais de elite com chapéu de palha, General Raiga encapuzado com duas lâminas curvas e Lorde Akuma com longos
+  cabelos prateados, tiara com chifres e capa vermelha rasgada. Contornos estilo ilustração.
+- Menu, telas de carregamento por fase e telas de vitória/derrota com arte em tela cheia e tipografia japonesa (Shippori Mincho).
+- Janela padrão 1920×1080; interface vetorial nítida até 4K (a cena 3D é renderizada na resolução nativa do monitor).
+
 ---
 
 ## Como executar
 
-1. Instale o **Godot 4.3** (ou mais recente da série 4.x), versão padrão (não-.NET): <https://godotengine.org/download>
+1. Instale o **Godot 4.3** (recomendado 4.3; outras versões 4.x devem funcionar), versão padrão (não-.NET): <https://godotengine.org/download>
 2. Abra o Godot → **Importar** → selecione o arquivo `project.godot` desta pasta.
 3. Pressione **F5** (Executar projeto).
 
