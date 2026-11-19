@@ -1,6 +1,6 @@
 # Créditos e origem dos recursos
 
-O projeto **não utiliza nenhum recurso pago nem de terceiros** além da própria engine.
+O projeto não utiliza recursos pagos. Além da engine, os únicos recursos externos são a fonte Shippori Mincho (licença livre OFL) e as artes fornecidas pelo autor do projeto (veja a tabela).
 
 | Recurso | Origem | Licença |
 |---|---|---|
