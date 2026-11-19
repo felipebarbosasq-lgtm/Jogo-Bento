@@ -1,0 +1,13 @@
+# Godot
+.godot/
+*.translation
+export/
+build/
+*.apk
+*.aab
+*.exe
+*.pck
+android/build/
+# SO
+.DS_Store
+Thumbs.db

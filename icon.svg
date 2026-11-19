@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="40" fill="#0d0a10"/>
+  <circle cx="160" cy="96" r="58" fill="#c3162f"/>
+  <path d="M40 210 L200 50 L212 62 L52 222 Z" fill="#e8e8ee"/>
+  <rect x="30" y="200" width="44" height="14" rx="4" transform="rotate(-45 52 207)" fill="#5a0f18"/>
+  <text x="128" y="236" font-family="serif" font-size="34" font-weight="bold" fill="#e8e8ee" text-anchor="middle">SHIN</text>
+</svg>
