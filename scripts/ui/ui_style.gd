@@ -70,13 +70,13 @@ static func label(text: String, size := 20, col := Color(0.92, 0.9, 0.86), align
 
 static func backdrop(alpha := 0.7) -> ColorRect:
 	var r := ColorRect.new()
-	r.set_anchors_preset(Control.PRESET_FULL_RECT)
+	r.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	r.color = Color(0, 0, 0, alpha)
 	return r
 
 
 static func centered(node: Control) -> CenterContainer:
 	var c := CenterContainer.new()
-	c.set_anchors_preset(Control.PRESET_FULL_RECT)
+	c.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	c.add_child(node)
 	return c

@@ -9,7 +9,7 @@ var victory := false
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := UIStyle.backdrop(0.0)
 	add_child(bg)
 	var tw := create_tween()

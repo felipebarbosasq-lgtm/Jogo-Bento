@@ -9,7 +9,7 @@ signal menu_pressed
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(UIStyle.backdrop(0.65))
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 40)
@@ -43,7 +43,7 @@ func _ready() -> void:
 	v.add_child(UIStyle.label("CONTROLES", 22, UIStyle.GOLD))
 	var rows: Array
 	if Game.is_touch():
-		rows = [["Joystick (esquerda)", "Mover (até o fim: correr)"], ["Arrastar (direita)", "Câmera"], ["ATAQUE", "Toque: leve • Segure: pesado"], ["DEFESA", "Segure para defender"], ["APARAR", "No instante do golpe"], ["ESQUIVA", "Rolamento / salto"], ["ESPECIAL", "Corte da Lua (Ki cheio)"], ["✋", "Interagir"]]
+		rows = [["Joystick (esquerda)", "Mover (até o fim: correr)"], ["Arrastar (direita)", "Câmera"], ["ATAQUE", "Toque: leve • Segure: pesado"], ["DEFESA", "Segure para defender"], ["APARAR", "No instante do golpe"], ["ESQUIVA", "Rolamento / salto"], ["ESPECIAL", "Corte da Lua (Ki cheio)"], ["AGIR", "Interagir"]]
 	else:
 		rows = [["W A S D", "Mover"], ["Mouse", "Câmera (roda: zoom)"], ["Shift", "Correr"], ["Clique esquerdo", "Ataque leve (combo x3)"], ["Segurar clique esq.", "Ataque pesado"], ["Clique direito", "Defender"], ["F", "Aparar (janela precisa)"], ["Espaço", "Esquivar / saltar"], ["Q", "Habilidade especial"], ["E", "Interagir"], ["Esc", "Pausar"]]
 	var grid := GridContainer.new()

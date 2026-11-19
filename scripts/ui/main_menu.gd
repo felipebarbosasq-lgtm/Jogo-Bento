@@ -14,9 +14,9 @@ var _t := 0.0
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := TextureRect.new()
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var grad := Gradient.new()
 	grad.set_color(0, Color(0.16, 0.03, 0.05))
 	grad.set_color(1, Color(0.02, 0.01, 0.02))
@@ -31,7 +31,7 @@ func _ready() -> void:
 	add_child(bg)
 
 	var moon := MoonDraw.new()
-	moon.set_anchors_preset(Control.PRESET_FULL_RECT)
+	moon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	moon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(moon)
 
@@ -119,7 +119,7 @@ func _add_hero_view() -> void:
 	var world := Node3D.new()
 	vp.add_child(world)
 	var cam := Camera3D.new()
-	cam.position = Vector3(0.0, 1.25, 3.3)
+	cam.position = Vector3(0.15, 1.15, 4.4)
 	cam.fov = 40
 	world.add_child(cam)
 	cam.look_at_from_position(cam.position, Vector3(0, 1.05, 0), Vector3.UP)

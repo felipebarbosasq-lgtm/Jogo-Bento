@@ -56,7 +56,7 @@ Android e em PCs modestos. A orientação no celular é horizontal (paisagem com
 | Aparar | F | Botão APARAR |
 | Esquivar / saltar | Espaço | Botão ESQUIVA |
 | Habilidade especial | Q | Botão ESPECIAL |
-| Interagir | E | Botão ✋ |
+| Interagir | E | Botão AGIR |
 | Pausar | Esc | Botão ❚❚ (topo) / Voltar |
 
 Controle (gamepad) também é suportado: analógicos, X ataque, RB defesa, LB aparar, A esquiva, Y especial,

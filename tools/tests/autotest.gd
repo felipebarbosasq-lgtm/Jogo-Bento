@@ -30,6 +30,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	_stage_time += delta
+	if main and is_instance_valid(main.end_screen) and main.end_screen.victory:
+		print("[AUTOTEST] SUCESSO: campanha concluída")
+		get_tree().quit(0)
+		return
 	var lvl = Game.level
 	if not is_instance_valid(lvl):
 		return

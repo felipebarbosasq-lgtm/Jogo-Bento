@@ -12,7 +12,7 @@ const BUTTONS := [
 	{"id": "block", "label": "DEFESA", "sub": "", "pos": Vector2(-125, -310), "r": 52.0, "col": Color(0.55, 0.55, 0.6)},
 	{"id": "parry", "label": "APARAR", "sub": "", "pos": Vector2(-280, -255), "r": 46.0, "col": Color(0.9, 0.75, 0.3)},
 	{"id": "special", "label": "ESPECIAL", "sub": "", "pos": Vector2(-430, -110), "r": 44.0, "col": Color(0.45, 0.7, 1.0)},
-	{"id": "interact", "label": "✋", "sub": "", "pos": Vector2(-140, -450), "r": 40.0, "col": Color(0.9, 0.9, 0.85)},
+	{"id": "interact", "label": "AGIR", "sub": "", "pos": Vector2(-140, -450), "r": 40.0, "col": Color(0.9, 0.9, 0.85)},
 ]
 
 var _fingers := {}          # índice -> "joy" / "look" / id do botão
@@ -24,7 +24,7 @@ const JOY_R := 90.0
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 

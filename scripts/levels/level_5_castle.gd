@@ -23,8 +23,8 @@ func _build_world() -> void:
 		"sky_top": Color(0.08, 0.01, 0.03), "sky_horizon": Color(0.45, 0.06, 0.08), "sky_bottom": Color(0.1, 0.02, 0.03),
 		"moon_dir": Vector3(0.0, 0.42, -1.0), "moon_color": Color(1.0, 0.12, 0.08), "moon_size": 0.16, "moon_glow": 1.6,
 		"stars": 0.3, "clouds": 0.45,
-		"fog_color": Color(0.32, 0.06, 0.08), "fog_density": 0.018, "fog_sky": 0.15,
-		"ambient": Color(0.55, 0.3, 0.35), "ambient_energy": 0.6, "sun_color": Color(1.0, 0.35, 0.3), "sun_energy": 0.9,
+		"fog_color": Color(0.2, 0.06, 0.08), "fog_density": 0.012, "fog_sky": 0.15,
+		"ambient": Color(0.42, 0.36, 0.48), "ambient_energy": 0.6, "sun_color": Color(0.95, 0.55, 0.5), "sun_energy": 0.85, "saturation": 0.95,
 		"sun_rot": Vector3(-30, 180, 0), "exposure": 1.05,
 	})
 	for c in get_children():
@@ -82,7 +82,7 @@ func _build_world() -> void:
 			Props.batch_add("hedge", Props.box_mesh(Vector3(1.6, 1.6, 7.6)), Props.mat(Color(0.1, 0.12, 0.08)), Props.xf(Vector3(sx * 10.0, 0.8, z)))
 	# arena do duelo
 	Props.mesh(self, Props.cyl_mesh(19.0, 19.5, 0.6, 40), ARENA + Vector3(0, 0.3, 0), Props.mat(Color(0.3, 0.28, 0.28), 1.0))
-	Props.mesh(self, Props.cyl_mesh(6.0, 6.0, 0.05, 32), ARENA + Vector3(0, 0.62, 0), Props.mat(Color(0.45, 0.06, 0.08), 0.9))
+	Props.mesh(self, Props.cyl_mesh(6.0, 6.0, 0.05, 32), ARENA + Vector3(0, 0.62, 0), Props.mat(Color(0.22, 0.05, 0.06), 0.9))
 	var floor_b := Props.body(self, ARENA + Vector3(0, 0.3, 0))
 	Props.add_cyl_shape(floor_b, 19.5, 0.6)
 	Props.ramp(self, ARENA + Vector3(0, 0, 21.5), ARENA + Vector3(0, 0.6, 19.0), 6.0, Props.mat(Color(0.3, 0.28, 0.28), 1.0))
@@ -171,7 +171,7 @@ func _on_akuma_phase(_ph: int) -> void:
 	])
 	if env:
 		var tw := create_tween()
-		tw.tween_property(env, "fog_light_color", Color(0.5, 0.04, 0.05), 2.0)
+		tw.tween_property(env, "fog_light_color", Color(0.32, 0.04, 0.05), 2.0)
 	if sky_mat:
 		sky_mat.set_shader_parameter("moon_glow", 2.4)
 		sky_mat.set_shader_parameter("moon_size", 0.2)

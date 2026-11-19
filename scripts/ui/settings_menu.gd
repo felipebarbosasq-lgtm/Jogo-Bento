@@ -7,7 +7,7 @@ signal closed
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(UIStyle.backdrop(0.75))
 	var panel := UIStyle.panel()
 	var scroll := ScrollContainer.new()

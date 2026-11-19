@@ -49,7 +49,7 @@ func _ready() -> void:
 	overlay.layer = 20
 	add_child(overlay)
 	fade = ColorRect.new()
-	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	fade.color = Color(0, 0, 0, 1)
 	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.add_child(fade)
@@ -62,6 +62,10 @@ func _ready() -> void:
 		add_child(bot)
 	if args.has("probe") and ResourceLoader.exists("res://tools/tests/combat_probe.gd"):
 		add_child(load("res://tools/tests/combat_probe.gd").new())
+	if args.has("touch"):
+		Game.settings.touch = "on"
+	if args.has("screenshot"):
+		_auto_screenshot(str(args.screenshot), args.has("pause"))
 	if args.has("level"):
 		Game.new_game()
 		var lv := clampi(int(args.level) - 1, 0, 4)
@@ -78,6 +82,16 @@ func _args() -> Dictionary:
 		var kv := s.split("=")
 		d[kv[0]] = kv[1] if kv.size() > 1 else "1"
 	return d
+
+
+func _auto_screenshot(path: String, open_pause: bool) -> void:
+	## Ferramenta de teste: salva uma captura de tela após alguns segundos.
+	await get_tree().create_timer(4.0).timeout
+	if open_pause:
+		toggle_pause()
+	await get_tree().create_timer(0.8).timeout
+	get_viewport().get_texture().get_image().save_png(path)
+	get_tree().quit()
 
 
 # ------------------------------------------------------------------- menu

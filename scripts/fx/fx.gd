@@ -48,10 +48,12 @@ static func _particles(pos: Vector3, amount: int, color: Color, lifetime: float,
 	root.add_child(p)
 	p.global_position = pos
 	p.emitting = true
-	var t := root.get_tree().create_timer(lifetime + 0.5, false)
-	t.timeout.connect(func():
-		if is_instance_valid(p):
-			p.queue_free())
+	var t := Timer.new()
+	t.wait_time = lifetime + 0.5
+	t.one_shot = true
+	t.autostart = true
+	t.timeout.connect(p.queue_free)
+	p.add_child(t)
 	return p
 
 

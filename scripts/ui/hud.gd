@@ -45,12 +45,12 @@ var _letterbox := 0.0
 func _ready() -> void:
 	layer = 5
 	root = Control.new()
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 
 	vignette = ColorRect.new()
-	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	vignette.color = Color(0.6, 0.0, 0.0, 0.0)
 	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(vignette)
@@ -152,7 +152,7 @@ func _ready() -> void:
 	root.add_child(toast_label)
 
 	title_label = _label("", 46, Color(0.97, 0.94, 0.88))
-	title_label.set_anchors_preset(Control.PRESET_CENTER)
+	title_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	title_label.offset_left = -600
 	title_label.offset_right = 600
 	title_label.offset_top = -80
@@ -161,7 +161,7 @@ func _ready() -> void:
 	title_label.modulate.a = 0.0
 	root.add_child(title_label)
 	subtitle_label = _label("", 22, Color(0.85, 0.2, 0.2))
-	subtitle_label.set_anchors_preset(Control.PRESET_CENTER)
+	subtitle_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	subtitle_label.offset_left = -600
 	subtitle_label.offset_right = 600
 	subtitle_label.offset_top = -10
@@ -239,7 +239,7 @@ func _bar(col: Color, size: Vector2, transparent_bg := false) -> ProgressBar:
 
 func _build_dialog() -> void:
 	dialog_box = Control.new()
-	dialog_box.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dialog_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	dialog_box.mouse_filter = Control.MOUSE_FILTER_STOP
 	dialog_box.gui_input.connect(_on_dialog_input)
 	root.add_child(dialog_box)
@@ -291,7 +291,7 @@ func _process(delta: float) -> void:
 		ki_label.modulate = Color(1, 1, 1, 0.6 + 0.4 * sin(Time.get_ticks_msec() * 0.008)) if full else Color.WHITE
 	if is_instance_valid(boss):
 		boss_bar.value = boss.hp / boss.max_hp * 100.0
-		boss_box.visible = boss.active and not boss.is_dead()
+		boss_box.visible = boss.active and not boss.is_dead() and not dialog_box.visible
 	else:
 		boss_box.visible = false
 	# dicas
@@ -336,7 +336,7 @@ func set_prompt(text: String) -> void:
 	if text == "" or dialog_box.visible:
 		prompt_label.text = ""
 		return
-	prompt_label.text = ("Toque em  ✋  " if Game.is_touch() else "[E]  ") + text
+	prompt_label.text = ("Toque em AGIR:  " if Game.is_touch() else "[E]  ") + text
 
 
 func hint(text: String, time := 6.0) -> void:
