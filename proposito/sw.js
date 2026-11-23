@@ -1,6 +1,6 @@
 // Service worker: guarda o app para funcionar sem internet.
-const CACHE = "proposito-v1";
-const FILES = ["./", "index.html", "styles.css", "data.js", "app.js", "manifest.webmanifest", "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png"];
+const CACHE = "proposito-v2";
+const FILES = ["./", "index.html", "styles.css", "data.js", "app.js", "manifest.webmanifest", "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "img/hero-treino.jpg", "img/hero-corrida.jpg", "img/hero-foco.jpg"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
 });
